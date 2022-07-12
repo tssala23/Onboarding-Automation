@@ -41,6 +41,9 @@ spec:
         ports:
         - containerPort: 3000
           protocol: TCP
+        volumeMounts:
+        - name: patch-file
+          mountPath: ~/
         resources:
           limits:
             cpu: 500m
@@ -48,3 +51,6 @@ spec:
           requests:
             cpu: 200m
             memory: 100Mi
+      volumes:
+      - name: patch-file
+        configMap: robozome-configMap

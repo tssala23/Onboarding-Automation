@@ -11,3 +11,9 @@ commonLabels:
 images:
 - name: example
   newName: quay.io/operate-first/opf-toolbox:v0.5.0
+configMapGenerator:
+- name: robozome-configMap
+  files:
+  - onboarding.patch
+generatorOptions:
+  disableNameSuffixHash: true
