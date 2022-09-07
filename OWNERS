@@ -1,10 +1,11 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-  - tumido
-  - larsks
   - HumairAK
-reviewers:
-  - tumido
   - larsks
-  - tssala23
+  - mimotej
+  - tumido
+reviewers:
+  - larsks
+  - mimotej
+  - tumido
