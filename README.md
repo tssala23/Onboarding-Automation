@@ -1,77 +1,33 @@
+<h3 align="center"><a href="https://github.com/operate-first/robozome">Robozome</a></h3>
+<p align="center">Automation tool for Operate First</p>
 <p align="center">
-  <a href="https://github.com/open-services-group/probot-template">
-    <img src="https://raw.githubusercontent.com/open-services-group/probot-template/main/static/robot.svg" width="160" alt="Probot's logo, a cartoon robot" />
+  <a href="https://github.com/operate-first/robozome/releases">
+    <img alt="GitHub tag (latest by date)" src="https://img.shields.io/github/v/tag/operate-first/robozome">
   </a>
-</p>
-<h3 align="center"><a href="https://github.com/open-services-group/probot-template">Probot on Kubernetes - template repository</a></h3>
-<p align="center">
-  <a href="https://github.com/open-services-group/probot-template">
-    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/open-services-group/probot-template">
+  <a href="https://github.com/operate-first/robozome/actions?query=workflow%3APush">
+    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/operate-first/robozome/Push">
   </a>
-  <a href="https://github.com/open-services-group/probot-template/blob/main/LICENSE">
+  <a href="https://github.com/operate-first/robozome">
+    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/operate-first/robozome">
+  </a>
+  <a href="https://github.com/operate-first/robozome/blob/main/LICENSE">
     <img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg">
   </a>
-  <a href="https://github.com/open-services-group/probot-template/issues?q=is%3Aissue+is%3Aopen+label%3Akind%2Fbug">
-    <img alt="Reported bugs" src="https://img.shields.io/github/issues-search/open-services-group/probot-template?color=red&label=reported%20bugs&query=is%3Aopen%20label%3Akind%2Fbug">
+  <a href="https://github.com/operate-first/robozome/issues?q=is%3Aissue+is%3Aopen+label%3Akind%2Fbug">
+    <img alt="Reported bugs" src="https://img.shields.io/github/issues-search/operate-first/robozome?color=red&label=reported%20bugs&query=is%3Aopen%20label%3Akind%2Fbug">
   </a>
-  <a href="https://github.com/open-services-group/probot-template/issues?q=is%3Aissue+is%3Aopen+label%3Akind%2Fbug">
-    <img alt="Feature requests" src="https://img.shields.io/github/issues-search/open-services-group/probot-template?label=feature%20requests&query=is%3Aopen%20label%3Akind%2Ffeature">
+  <a href="https://github.com/operate-first/robozome/issues?q=is%3Aissue+is%3Aopen+label%3Akind%2Ffeature">
+    <img alt="Feature requests" src="https://img.shields.io/github/issues-search/operate-first/robozome?label=feature%20requests&query=is%3Aopen%20label%3Akind%2Ffeature">
   </a>
 </p>
 
 ---
-## How to use
 
-1. Create a new repository from this template
-2. Template all references
+Robozome is a project that aims to automize routine tasks such as onboarding users. It is built on top of [Probot on Kubernetes template](https://github.com/operate-first/probot-template) and uses [mustache](https://mustache.github.io/) to generate patches which are then applied to the target repository.
 
-    ```sh
-    cat <<EOM > /tmp/data.yaml
-    name: application-name
-    description: Some text
-    prod-namespace: namespaceA
-    stage-namespace: namespaceB
-    image: quay.io/org/repo
-    team: team-name
-    org-repo: org/repo
-    EOM
+## Usage
 
-    mustache /tmp/data.yaml manifests/base/controller/kustomization.yaml > manifests/base/controller/kustomization.yaml
-    mustache /tmp/data.yaml manifests/base/tasks/kustomization.yaml > manifests/base/tasks/kustomization.yaml
-    mustache /tmp/data.yaml manifests/base/kustomization.yaml > manifests/base/kustomization.yaml
-    mustache /tmp/data.yaml manifests/overlays/stage/kustomization.yaml > manifests/overlays/stage/kustomization.yaml
-    mustache /tmp/data.yaml manifests/overlays/prod/kustomization.yaml > manifests/overlays/prod/kustomization.yaml
-    mustache /tmp/data.yaml src/app.ts > src/app.ts
-    mustache /tmp/data.yaml package.json > package.json
-    mustache /tmp/data.yaml package-lock.json > package-lock.json
-    mv README.md README.old.md
-    mustache /tmp/data.yaml README.template.md > README.md
-    ```
-
-3. Follow a guide at Probot on [how to create and configure a GitHubApp](https://probot.github.io/docs/development/#manually-configuring-a-github-app)
-
-4. Create credentials secrets for deployment based on your GitHub app data
-
-    ```sh
-    # Copy secret from base
-    cp manifests/base/controller/secret.yaml manifests/overlays/stage/secret.enc.yaml
-    cp manifests/base/controller/secret.yaml manifests/overlays/prod/secret.enc.yaml
-
-    # edit manifests/overlays/*/secret.enc.yaml filling in all data
-
-    # Encrypt them via sops
-    sops -e -i --pgp="0508677DD04952D06A943D5B4DC4116D360E3276" manifests/overlays/stage/secret.enc.yaml
-    sops -e -i --pgp="0508677DD04952D06A943D5B4DC4116D360E3276" manifests/overlays/prod/secret.enc.yaml
-    ```
-
-5. Hack on `src/app.ts`.
-
-## Resources
-
-- [Probot documentation](https://probot.github.io/docs/)
-- [Open Services Group extensions](https://github.com/open-services-group/probot-extensions)
-- Example: [Peribolos as a service](https://github.com/open-services-group/peribolos-as-a-service)
-
+You can interact with installed Robozome using issue templates. Robozome will parse the issue and take action based on the template.
 ## Contributions
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute.
