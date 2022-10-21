@@ -7,37 +7,9 @@ import {
   deleteTokenSecret,
   getNamespace,
   getTokenSecretName,
-  updateTokenSecret,
   useApi,
 } from '@operate-first/probot-kubernetes';
 import parse from '@operate-first/probot-issue-form';
-
-const generateTaskPayload = (name: string, context: any) => ({
-  apiVersion: 'tekton.dev/v1beta1',
-  kind: 'TaskRun',
-  metadata: {
-    // "{{name}}" to match the prefix in manifests/base/tasks/kustomization.yaml namePrefix
-    // (not necessary for functionality, just for consistency)
-    generateName: `{{name}}-${name}-`,
-  },
-  spec: {
-    taskRef: {
-      // "{{name}}" to match the prefix in manifests/base/tasks/kustomization.yaml namePrefix
-      // necessary for functionality
-      name: '{{name}}-' + name,
-    },
-    params: [
-      {
-        name: 'SECRET_NAME',
-        value: getTokenSecretName(context),
-      },
-      {
-        name: 'CONTEXT',
-        value: JSON.stringify(context.payload),
-      },
-    ],
-  },
-});
 
 export default (
   app: Probot,
@@ -76,9 +48,9 @@ export default (
     labelNames: ['install', 'operation', 'status', 'method'],
   });
 
-  //From peribolos app.ts
   const createTaskRun = (
     name: string,
+    taskType: string,
     context: any,
     extraParams: Array<Record<string, unknown>> = []
   ) => {
@@ -101,28 +73,31 @@ export default (
       },
       spec: {
         taskRef: {
-          name,
+          name: `${name}-${taskType}`,
         },
-        params: params,
+        params,
       },
     };
 
-    wrapOperationWithMetrics(
-      useApi(APIS.CustomObjectsApi).createNamespacedCustomObject(
-        'tekton.dev',
-        'v1beta1',
-        getNamespace(),
-        'taskruns',
-        taskRunpayload
-      ),
-      {
-        install: context.payload.installation.id,
-        method: name,
-      }
+    const createNamespace = useApi(
+      APIS.CustomObjectsApi
+    ).createNamespacedCustomObject(
+      'tekton.dev',
+      'v1beta1',
+      getNamespace(),
+      'taskruns',
+      taskRunpayload
     );
+
+    const metricLabels = {
+      install: context.payload.installation.id,
+      method: name,
+    };
+
+    wrapOperationWithMetrics(createNamespace, metricLabels);
   };
 
-  // Simple callback wrapper - executes and async operation and based on the result it inc() operationsTriggered counted
+  // Simple callback wrapper - executes an async operation and based on the result it inc() operationsTriggered counted
   const wrapOperationWithMetrics = (callback: Promise<any>, labels: any) => {
     const response = callback
       .then(() => ({
@@ -161,29 +136,6 @@ export default (
     });
   });
 
-  app.on('push', async (context: any) => {
-    // Update token in case it expired
-    wrapOperationWithMetrics(updateTokenSecret(context), {
-      install: context.payload.installation.id,
-      method: 'updateSecret',
-    });
-
-    // Trigger example taskrun
-    wrapOperationWithMetrics(
-      useApi(APIS.CustomObjectsApi).createNamespacedCustomObject(
-        'tekton.dev',
-        'v1beta1',
-        getNamespace(),
-        'taskruns',
-        generateTaskPayload('example', context)
-      ),
-      {
-        install: context.payload.installation.id,
-        method: 'scheduleExampleTaskRun',
-      }
-    );
-  });
-
   app.on('installation.deleted', async (context: any) => {
     numberOfUninstallTotal.labels({}).inc();
 
@@ -194,38 +146,112 @@ export default (
     });
   });
 
+  app.on('issues.closed', async (context: any) => {
+    context.log.info('issue closed');
+  });
+
+  app.on('issues.reopened', async (context: any) => {
+    context.log.info('issue reopened');
+    await handleIssueOpen(context);
+  });
+
   app.on('issues.opened', async (context: any) => {
-    try {
-      let data = await parse(context);
+    context.log.info('issue opened');
+    await handleIssueOpen(context);
+  });
 
-      const body: string = context.payload.issue['body'];
-
-      if (body.includes('### Target cluster')) {
-        //Used to check if it is a onboarding request
-
-        data['cluster'] = data['cluster'][0]; //remove lists so string value passed to task
-        data['quota'] = data['quota'][0];
-
-        const payload = JSON.stringify(JSON.stringify(data)); //format data to send to task
-
-        createTaskRun('robozome-onboarding', context, [
-          {
-            name: 'PAYLOAD',
-            value: payload,
-          },
-        ]);
-
-        //Create message to respond to request
-        let issueComment = context.issue({
-          body: 'Thanks for submitting onboarding request!',
-        });
-
-        return context.octokit.issues.createComment(issueComment); //Send confirmation message
+  app.on('issue_comment.created', async (context: any) => {
+    // Simple slash command parser.
+    // Parse comment for command "/robozome <arg>", only 1 arg supported
+    // Body must only contain the robozome command.
+    const comment: string = context.payload.comment.body.trim();
+    const regex = /^[/]robozome?\s(\w)+$/g;
+    const match = comment.match(regex);
+    if (match) {
+      const commandWithArgs: string[] = match[0].split(' ');
+      if (commandWithArgs.length == 2) {
+        switch (commandWithArgs[1]) {
+          case 'retry':
+            await handleIssueOpen(context);
+            break;
+          default:
+            await logAndComment(
+              context,
+              'Unrecognized /robozome command, valid commands: [retry]'
+            );
+            break;
+        }
       }
+    }
+  });
+
+  const logAndComment = async (context: any, msg: string) => {
+    context.log.info(msg);
+    return context.octokit.issues.createComment(
+      context.issue({
+        body: msg,
+      })
+    );
+  };
+
+  const handleIssueOpen = async (context: any) => {
+    try {
+      context.log.info('issue opened');
+      const data = await parse(context);
+
+      const issue: string = context.payload.issue.html_url;
+
+      const labels: string[] = context.payload.issue.labels.map(
+        (label: typeof context.octokit.label) => {
+          return label.name;
+        }
+      );
+
+      const scriptPath: string = labels
+        .filter((l) => l.includes('script'))[0]
+        ?.split(':')[1];
+      const taskType: string = labels
+        .filter((l) => l.includes('task-type'))[0]
+        ?.split(':')[1];
+      const targetRepo: string = labels
+        .filter((l) => l.includes('repo'))[0]
+        ?.split(':')[1];
+
+      if (!scriptPath || !taskType || !targetRepo) {
+        const msg: string =
+          'Automation PR workflow failed. One or more required GH labels not found. Automation PR ' +
+          'workflow requires the labels: [script:\\*], [task-type:\\*], and [repo:\\*]. ' +
+          `Please double check the issue template corresponding with this issue: ${issue}.\n` +
+          'Ensure all required labels are present. Then try again.';
+        await logAndComment(context, msg);
+        return;
+      }
+
+      const payload = JSON.stringify(JSON.stringify(data));
+
+      createTaskRun('robozome-onboarding', taskType, context, [
+        {
+          name: 'PAYLOAD',
+          value: payload,
+        },
+        {
+          name: 'ISSUE_URL',
+          value: issue,
+        },
+        {
+          name: 'SCRIPT_PATH',
+          value: scriptPath,
+        },
+      ]);
+
+      const issueComment = context.issue({
+        body: 'Thanks for submitting onboarding request!',
+      });
+      return context.octokit.issues.createComment(issueComment);
     } catch {
       app.log.info(
         'Issue was not created using Issue form template (the YAML ones)'
       );
     }
-  });
+  };
 };

@@ -1,0 +1,60 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: onboarding-bash
+spec:
+  params:
+    - name: REPO_NAME
+      type: string
+      default: .github
+    - name: SECRET_NAME
+      type: string
+    - name: PAYLOAD
+      type: string
+      default: ""
+  stepTemplate:
+    env:
+      - name: GITHUB_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: $(params.SECRET_NAME)
+            key: token
+      - name: ORG_NAME
+        valueFrom:
+          secretKeyRef:
+            name: $(params.SECRET_NAME)
+            key: orgName
+      - name: REPO_NAME
+        valueFrom:
+          secretKeyRef:
+            name: $(params.REPO_NAME)
+            key: orgName
+      - name: APP_ID
+        valueFrom:
+          secretKeyRef:
+            name: robozome-controller
+            key: app_id
+  workspaces:
+    - name: utility-scripts
+      mountPath: /utility-scripts
+    - mountPath: /mnt/shared
+      name: shared-data
+  steps:
+    - name: dump-payload
+      image: opf-toolbox
+      workingDir: /mnt/shared
+      script: |
+        #!/bin/bash
+        echo $(params.PAYLOAD) >> /mnt/shared/data.yaml
+    - name: setup-git-env
+      image: opf-toolbox
+      workingDir: /mnt/shared
+      command: ['/utility-scripts/setup-get-env.sh']
+    - name: apply-changes
+      image: opf-toolbox
+      workingDir: /mnt/shared/$(params.REPO_NAME)
+      command: ['./$(params.SCRIPT_PATH)']
+    - name: create-pr
+      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead
+      workingDir: /mnt/shared/$(params.REPO_NAME)
+      command: ['/utility-scripts/create-pr.sh']

@@ -3,6 +3,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - onboarding.yaml
+- issue-form-automation-bash.yaml
+- configmaps
 configurations:
 - .transformers.yaml
 namePrefix: "{{name}}-"
@@ -13,9 +15,5 @@ images:
   newName: quay.io/operate-first/opf-toolbox:v0.5.0
 - name: python
   newName: registry.access.redhat.com/ubi8/python-38
-configMapGenerator:
-- name: robozome
-  files:
-  - onboarding.patch
 generatorOptions:
   disableNameSuffixHash: true
