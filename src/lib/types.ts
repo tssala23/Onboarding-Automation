@@ -1,0 +1,1 @@
+enum COMMAND_STATUS { SUCCESS = 0, FAIL = 1}
