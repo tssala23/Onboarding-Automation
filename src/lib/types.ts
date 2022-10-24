@@ -1,1 +1,4 @@
-enum COMMAND_STATUS { SUCCESS = 0, FAIL = 1}
+// export enum STATUS {
+//   SUCCEEDED = 0,
+//   FAILED = 1,
+// }
