@@ -6,19 +6,12 @@ import {
 } from '@operate-first/probot-kubernetes';
 import { operationsTriggered } from './counters';
 import { IncomingMessage } from 'http';
-
-export const issueCommentFromContext = async (context: any, msg: string) => {
-  context.octokit.issues.createComment(
-    context.issue({
-      body: msg,
-    })
-  );
-};
+import { Context } from 'probot';
 
 export const createTaskRun = async (
   name: string,
   taskType: string,
-  context: any,
+  context: Context<'issue_comment.created'> | Context<'issues.opened'>,
   extraParams: Array<Record<string, unknown>> = []
 ): Promise<{ response: IncomingMessage; body: object }> => {
   const params = [
@@ -47,21 +40,19 @@ export const createTaskRun = async (
     },
   };
 
-  const res = await useApi(APIS.CustomObjectsApi).createNamespacedCustomObject(
+  return await useApi(APIS.CustomObjectsApi).createNamespacedCustomObject(
     'tekton.dev',
     'v1beta1',
     getNamespace(),
     'taskruns',
     taskRunpayload
   );
-
-  return res;
 };
 
 // Simple callback wrapper - executes an async operation and based on the result it inc() operationsTriggered counted
 export const wrapOperationWithMetrics = async (
   callback: Promise<any>,
-  labels: any
+  labels: { install: number | undefined; method: string }
 ) => {
   const response = await callback
     .then(() => ({

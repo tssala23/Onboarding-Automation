@@ -1,17 +1,25 @@
 import parse from '@operate-first/probot-issue-form';
-import { createTaskRun, issueCommentFromContext } from '../lib/util';
+import { createTaskRun } from '../lib/util';
+import { Context } from 'probot';
+import { comments } from '../lib/comments';
 
-export const handleIssueForm = async (context: any) => {
+export const handleIssueForm = async (
+  context: Context<'issue_comment.created'> | Context<'issues.opened'>
+) => {
   try {
     const data = await parse(context);
-
     const issue: string = context.payload.issue.html_url;
-
-    const labels: string[] = context.payload.issue.labels.map(
-      (label: typeof context.octokit.label) => {
+    const labels: string[] | undefined = context.payload.issue.labels?.map(
+      (label) => {
         return label.name;
       }
     );
+
+    if (!labels) {
+      const msg: string = comments.FORM_TASK_FAILED_NO_LABELS(issue);
+      context.log.error(msg);
+      return;
+    }
 
     const scriptPath: string = labels
       .filter((l) => l.includes('script'))[0]
@@ -24,14 +32,14 @@ export const handleIssueForm = async (context: any) => {
       ?.split(':')[1];
 
     if (!scriptPath || !taskType || !targetRepo) {
-      const msg: string =
-        'Automation PR workflow failed. One or more required GH labels not found. Automation PR ' +
-        'workflow requires the labels: [script:\\*], [task-type:\\*], and [repo:\\*]. ' +
-        `Please double check the issue template corresponding with this issue: ${issue}.\n` +
-        'Ensure all required labels are present. Then try again.';
-      await issueCommentFromContext(context, msg);
+      const msg: string = comments.FORM_TASK_FAILED_NO_LABELS(issue);
+      await context.octokit.issues.createComment(context.issue({ body: msg }));
+
       context.log.error(msg);
     }
+
+    // TODO: Add validation for label configs
+    // Does repo exist in this org? the task-type? etc.
 
     const payload = JSON.stringify(JSON.stringify(data));
 
@@ -51,18 +59,17 @@ export const handleIssueForm = async (context: any) => {
     ]);
 
     if (res.response.statusCode != 201) {
-      const msg =
-        'OCP response when creating TaskRun returned with a non successful response.';
-      context.log.error(msg);
+      context.log.error(
+        'OCP response when creating TaskRun did not return with HTTP 201.'
+      );
     }
 
-    const msg = 'Thanks for submitting onboarding request!';
-    await issueCommentFromContext(context, msg);
+    const msg = comments.FORM_TASK_CREATION_SUCCESS;
+    await context.octokit.issues.createComment(context.issue({ body: msg }));
   } catch (e) {
-    const msg =
-      'Automation procedure failed, Robozome failed to successfully submit TaskRun job to OCP namespace.';
-    await issueCommentFromContext(context, msg);
-    context.log.error(msg);
+    const msg = comments.FORM_TASK_CREATION_FAIL;
+    await context.octokit.issues.createComment(context.issue({ body: msg }));
+    context.log.error(msg, e);
     throw e;
   }
 };

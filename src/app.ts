@@ -1,4 +1,4 @@
-import { Probot } from 'probot';
+import { Context, Probot } from 'probot';
 import { Router } from 'express';
 import { exposeMetrics } from '@operate-first/probot-metrics';
 import {
@@ -30,58 +30,62 @@ export default (
   router.get('/healthz', (_, response) => response.status(200).send('OK'));
   exposeMetrics(router, '/metrics');
 
-  app.onAny((context: any) => {
+  app.onAny((context) => {
     // On any event inc() the counter
-    numberOfActionsTotal
-      .labels({
+    if ('installation' in context.payload && 'action' in context.payload) {
+      numberOfActionsTotal
+        .labels({
+          install: context.payload.installation?.id,
+          action: context.payload.action,
+        })
+        .inc();
+    }
+  });
+
+  app.on(
+    'installation.created',
+    async (context: Context<'installation.created'>) => {
+      numberOfInstallTotal.labels({}).inc();
+
+      // Create secret holding the access token
+      await wrapOperationWithMetrics(createTokenSecret(context), {
         install: context.payload.installation.id,
-        action: context.payload.action,
-      })
-      .inc();
-  });
-
-  app.on('installation.created', async (context: any) => {
-    numberOfInstallTotal.labels({}).inc();
-
-    // Create secret holding the access token
-    wrapOperationWithMetrics(createTokenSecret(context), {
-      install: context.payload.installation.id,
-      method: 'createSecret',
-    });
-  });
-
-  app.on('installation.deleted', async (context: any) => {
-    numberOfUninstallTotal.labels({}).inc();
-
-    // Delete secret containing the token
-    wrapOperationWithMetrics(deleteTokenSecret(context), {
-      install: context.payload.installation.id,
-      method: 'deleteSecret',
-    });
-  });
-
-  app.on('issues.reopened', async (context: any) => {
-    wrapOperationWithMetrics(handleIssueForm(context), {
-      install: context.payload.installation.id,
-      method: 'handleIssueForm',
-    });
-  });
-
-  app.on('issues.opened', async (context: any) => {
-    wrapOperationWithMetrics(handleIssueForm(context), {
-      install: context.payload.installation.id,
-      method: 'handleIssueForm',
-    });
-  });
-
-  app.on('issue_comment.created', async (context: any) => {
-    const comment: string = context.payload.comment.body.trim();
-    const commands: string[] = parseCommands(comment);
-
-    if (commands.length > 0)
-      wrapOperationWithMetrics(handleCommands(context, commands), {
-        install: context.payload.installation.id,
-        method: 'handleCommands',
+        method: 'createSecret',
       });
+    }
+  );
+
+  app.on(
+    'installation.deleted',
+    async (context: Context<'installation.deleted'>) => {
+      numberOfUninstallTotal.labels({}).inc();
+
+      // Delete secret containing the token
+      await wrapOperationWithMetrics(deleteTokenSecret(context), {
+        install: context.payload.installation.id,
+        method: 'deleteSecret',
+      });
+    }
+  );
+
+  app.on('issues.opened', async (context: Context<'issues.opened'>) => {
+    await wrapOperationWithMetrics(handleIssueForm(context), {
+      install: context.payload.installation?.id,
+      method: 'handleIssueForm',
+    });
   });
+
+  app.on(
+    'issue_comment.created',
+    async (context: Context<'issue_comment.created'>) => {
+      const comment: string = context.payload.comment.body.trim();
+      const commands: string[] = parseCommands(comment);
+
+      if (commands.length > 0)
+        await wrapOperationWithMetrics(handleCommands(context, commands), {
+          install: context.payload.installation?.id,
+          method: 'handleCommands',
+        });
+    }
+  );
 };

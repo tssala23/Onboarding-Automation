@@ -1,4 +1,5 @@
 import { cmdDefault, cmdHandlerMap } from '../lib/commands';
+import { Context } from 'probot';
 
 /**
  * @param {string}  comment - Issue Comment Body.
@@ -30,7 +31,10 @@ export const parseCommands = (comment: string): string[] => {
  * @param context
  * @param commands
  */
-export const handleCommands = async (context: any, commands: string[]) => {
+export const handleCommands = async (
+  context: Context<'issue_comment.created'>,
+  commands: string[]
+) => {
   for (const i in commands) {
     const cmd = commands[i];
     if (!cmdHandlerMap[cmd]) {
