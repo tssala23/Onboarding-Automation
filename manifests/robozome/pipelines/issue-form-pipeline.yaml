@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: issue-form-pipeline
+spec:
+  workspaces:
+    - name: shared-data
+    - name: utility-scripts
+  params:
+    - name: REPO_NAME
+      type: string
+    - name: SECRET_NAME
+      type: string
+    - name: PAYLOAD
+      type: string
+    - name: TASK_TYPE
+      type: string
+  finally:
+    - name: verify
+      params:
+        - name: appName
+          value: testappname
+      taskRef:
+        kind: Task
+        name: verify
+  tasks:
+    - name: issue-form-automation-bash
+      params:
+        - name: REPO_NAME
+          value: $(params.REPO_NAME)
+        - name: SECRET_NAME
+          value: $(params.SECRET_NAME)
+        - name: PAYLOAD
+          value: $(params.PAYLOAD)
+        - name: TASK_TYPE
+          value: $(params.TASK_TYPE)
+      when:
+        - input: "$(params.TASK_TYPE)"
+          operator: in
+          values: [ "bash"]
+      taskRef:
+        kind: Task
+        name: issue-form-automation-bash
+      workspaces:
+        - name: shared-data
+          workspace: shared-data
+        - name: utility-scripts
+          workspace: utility-scripts
+      timeout: "5m"
+    - name: issue-form-automation-moustache
+      params:
+        - name: REPO_NAME
+          value: $(params.REPO_NAME)
+        - name: SECRET_NAME
+          value: $(params.SECRET_NAME)
+        - name: PAYLOAD
+          value: $(params.PAYLOAD)
+        - name: TASK_TYPE
+          value: $(params.TASK_TYPE)
+      when:
+        - input: "$(params.TASK_TYPE)"
+          operator: in
+          values: [ "moustache" ]
+      taskRef:
+        kind: Task
+        name: issue-form-automation-moustache
+      workspaces:
+        - name: shared-data
+          workspace: shared-data
+        - name: utility-scripts
+          workspace: utility-scripts
+      timeout: "5m"

@@ -1,5 +1,5 @@
 import parse from '@operate-first/probot-issue-form';
-import { createTaskRun } from '../lib/util';
+import { createPipelineRun } from '../lib/util';
 import { Context } from 'probot';
 import { comments } from '../lib/comments';
 
@@ -43,20 +43,25 @@ export const handleIssueForm = async (
 
     const payload = JSON.stringify(JSON.stringify(data));
 
-    const res = await createTaskRun('robozome-onboarding', taskType, context, [
-      {
-        name: 'PAYLOAD',
-        value: payload,
-      },
-      {
-        name: 'ISSUE_URL',
-        value: issue,
-      },
-      {
-        name: 'SCRIPT_PATH',
-        value: scriptPath,
-      },
-    ]);
+    const res = await createPipelineRun(
+      'robozome-onboarding',
+      taskType,
+      context,
+      [
+        {
+          name: 'PAYLOAD',
+          value: payload,
+        },
+        {
+          name: 'ISSUE_URL',
+          value: issue,
+        },
+        {
+          name: 'SCRIPT_PATH',
+          value: scriptPath,
+        },
+      ]
+    );
 
     if (res.response.statusCode != 201) {
       context.log.error(

@@ -8,7 +8,7 @@ import { operationsTriggered } from './counters';
 import { IncomingMessage } from 'http';
 import { Context } from 'probot';
 
-export const createTaskRun = async (
+export const createPipelineRun = async (
   name: string,
   taskType: string,
   context: Context<'issue_comment.created'> | Context<'issues.opened'>,
@@ -23,20 +23,37 @@ export const createTaskRun = async (
       name: 'SECRET_NAME',
       value: getTokenSecretName(context),
     },
+    {
+      name: 'TASK_TYPE',
+      value: taskType,
+    },
     ...extraParams,
   ];
 
-  const taskRunpayload = {
+  const pipelineRunpayload = {
     apiVersion: 'tekton.dev/v1beta1',
-    kind: 'TaskRun',
+    kind: 'PipelineRun',
     metadata: {
       generateName: name + '-',
     },
     spec: {
-      taskRef: {
-        name: `${name}-${taskType}`,
+      pipelineRef: {
+        name: 'issue-form-pipeline',
       },
       params,
+      workspaces: [
+        {
+          name: 'utility-scripts',
+          configMap: {
+            name: 'utility-scripts',
+            defaultMode: 110,
+          },
+        },
+        {
+          name: 'shared-data',
+          emptyDir: {},
+        },
+      ],
     },
   };
 
@@ -44,8 +61,8 @@ export const createTaskRun = async (
     'tekton.dev',
     'v1beta1',
     getNamespace(),
-    'taskruns',
-    taskRunpayload
+    'pipelineruns',
+    pipelineRunpayload
   );
 };
 

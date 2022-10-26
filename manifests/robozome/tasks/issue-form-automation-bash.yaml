@@ -1,17 +1,15 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: onboarding-bash
+  name: issue-form-automation-bash
 spec:
   params:
     - name: REPO_NAME
       type: string
-      default: .github
     - name: SECRET_NAME
       type: string
     - name: PAYLOAD
       type: string
-      default: ""
   stepTemplate:
     env:
       - name: GITHUB_TOKEN
@@ -41,20 +39,20 @@ spec:
       name: shared-data
   steps:
     - name: dump-payload
-      image: opf-toolbox
+      image: quay.io/operate-first/opf-toolbox:v0.11.0
       workingDir: /mnt/shared
       script: |
         #!/bin/bash
         echo $(params.PAYLOAD) >> /mnt/shared/data.yaml
-    - name: setup-git-env
-      image: opf-toolbox
-      workingDir: /mnt/shared
-      command: ['/utility-scripts/setup-get-env.sh']
-    - name: apply-changes
-      image: opf-toolbox
-      workingDir: /mnt/shared/$(params.REPO_NAME)
-      command: ['./$(params.SCRIPT_PATH)']
-    - name: create-pr
-      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead
-      workingDir: /mnt/shared/$(params.REPO_NAME)
-      command: ['/utility-scripts/create-pr.sh']
+#    - name: setup-git-env
+#      image: opf-toolbox
+#      workingDir: /mnt/shared
+#      command: ['/utility-scripts/setup-get-env.sh']
+#    - name: apply-changes
+#      image: opf-toolbox
+#      workingDir: /mnt/shared/$(params.REPO_NAME)
+#      command: ['./$(params.SCRIPT_PATH)']
+#    - name: create-pr
+#      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead
+#      workingDir: /mnt/shared/$(params.REPO_NAME)
+#      command: ['/utility-scripts/create-pr.sh']
