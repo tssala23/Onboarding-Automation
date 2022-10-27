@@ -10,6 +10,8 @@ spec:
       type: string
     - name: PAYLOAD
       type: string
+    - name: SCRIPT_PATH
+      type: string
   stepTemplate:
     env:
       - name: GITHUB_TOKEN
@@ -23,15 +25,7 @@ spec:
             name: $(params.SECRET_NAME)
             key: orgName
       - name: REPO_NAME
-        valueFrom:
-          secretKeyRef:
-            name: $(params.REPO_NAME)
-            key: orgName
-      - name: APP_ID
-        valueFrom:
-          secretKeyRef:
-            name: robozome-controller
-            key: app_id
+        value: $(params.REPO_NAME)
   workspaces:
     - name: utility-scripts
       mountPath: /utility-scripts
@@ -43,15 +37,18 @@ spec:
       workingDir: /mnt/shared
       script: |
         #!/bin/bash
+        echo "Copying Payload to Shared volume /mnt/shared/data.yaml..."
         echo $(params.PAYLOAD) >> /mnt/shared/data.yaml
-#    - name: setup-git-env
-#      image: opf-toolbox
-#      workingDir: /mnt/shared
-#      command: ['/utility-scripts/setup-get-env.sh']
-#    - name: apply-changes
-#      image: opf-toolbox
-#      workingDir: /mnt/shared/$(params.REPO_NAME)
-#      command: ['./$(params.SCRIPT_PATH)']
+        echo "Printing contents of shared data.yaml ..."
+        cat /mnt/shared/data.yaml
+    - name: setup-git-env
+      image: opf-toolbox
+      workingDir: /mnt/shared
+      command: ['/utility-scripts/setup-get-env.sh']
+    - name: apply-changes
+      image: opf-toolbox
+      workingDir: /mnt/shared/$(params.REPO_NAME)
+      command: ['./$(params.SCRIPT_PATH)']
 #    - name: create-pr
 #      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead
 #      workingDir: /mnt/shared/$(params.REPO_NAME)

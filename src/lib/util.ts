@@ -7,6 +7,9 @@ import {
 import { operationsTriggered } from './counters';
 import { IncomingMessage } from 'http';
 import { Context } from 'probot';
+import * as k8s from '@kubernetes/client-node';
+import { HttpError } from '@kubernetes/client-node';
+import { InstallationAccessTokenAuthentication } from '@octokit/auth-app';
 
 export const createPipelineRun = async (
   name: string,
@@ -15,10 +18,6 @@ export const createPipelineRun = async (
   extraParams: Array<Record<string, unknown>> = []
 ): Promise<{ response: IncomingMessage; body: object }> => {
   const params = [
-    {
-      name: 'REPO_NAME',
-      value: context.payload['repository']['name'],
-    },
     {
       name: 'SECRET_NAME',
       value: getTokenSecretName(context),
@@ -64,6 +63,101 @@ export const createPipelineRun = async (
     'pipelineruns',
     pipelineRunpayload
   );
+};
+
+export const verifySecret = async (context: any) => {
+  try {
+    const secretName = getTokenSecretName(context);
+    const namespace = getNamespace();
+
+    const appSecret = await useApi(k8s.CoreV1Api).readNamespacedSecret(
+      secretName,
+      namespace
+    );
+    if (!appSecret) {
+      await createTokenSecret(context);
+    }
+
+    // Ensure secret is upto date
+    const expiry_date = new Date(
+      appSecret.body?.metadata?.annotations?.expiresAt || 0
+    );
+    await updateTokenSecret(context, expiry_date, secretName, namespace);
+  } catch (e) {
+    if (e instanceof HttpError && e.body.reason == 'NotFound') {
+      context.log.info('Did not find Probot Secret in namespace, creating...');
+      await createTokenSecret(context);
+    } else {
+      context.log.error(
+        'Encountered error when trying to verify Probot Secret in namespace.'
+      );
+    }
+  }
+};
+
+export const createTokenSecret = async (context: any) => {
+  try {
+    const res = await useApi(k8s.CoreV1Api).createNamespacedSecret(
+      getNamespace(),
+      await createSecretPayload(context)
+    );
+    if (res.response.statusCode == 201)
+      context.log.info('Probot secret created successfully.');
+    else context.log.info('Probot secret creation failed.');
+  } catch (e) {
+    context.log.error('Encountered error when trying to create Secret.');
+  }
+};
+
+const createSecretPayload = async (context: any) => {
+  const appAuth = (await context.octokit.auth({
+    type: 'installation',
+  })) as InstallationAccessTokenAuthentication;
+  const orgName = context.payload.organization.login;
+
+  return {
+    metadata: {
+      name: getTokenSecretName(context),
+      labels: {
+        'app.kubernetes.io/created-by': 'probot',
+      },
+      annotations: {
+        expiresAt: appAuth.expiresAt,
+      },
+    },
+    stringData: {
+      token: appAuth.token,
+      orgName: orgName,
+    },
+  } as k8s.V1Secret;
+};
+
+// TODO: converge update/patch?
+export const updateTokenSecret = async (
+  context: any,
+  expiry_date: Date,
+  secretName: string,
+  namespace: string
+) => {
+  const current_date = new Date();
+  const expiration_threshold = 5 * 60000;
+  const tokenExpired =
+    expiry_date.getTime() < current_date.getTime() + expiration_threshold; // 5 minutes in milliseconds
+  if (tokenExpired) {
+    context.log.info('GH Token expired, updating...');
+    try {
+      await useApi(k8s.CoreV1Api).patchNamespacedSecret(
+        secretName,
+        namespace,
+        await createSecretPayload(context)
+      );
+      context.log.info('GH Token patched.');
+    } catch (e) {
+      context.log.error(
+        `Encountered Error GH Token was not successfully patched. Error: ${e}`
+      );
+    }
+  }
 };
 
 // Simple callback wrapper - executes an async operation and based on the result it inc() operationsTriggered counted

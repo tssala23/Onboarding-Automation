@@ -60,6 +60,10 @@ export const handleIssueForm = async (
           name: 'SCRIPT_PATH',
           value: scriptPath,
         },
+        {
+          name: 'REPO_NAME',
+          value: targetRepo,
+        },
       ]
     );
 

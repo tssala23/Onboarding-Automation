@@ -1,17 +1,18 @@
 import { Context, Probot } from 'probot';
 import { Router } from 'express';
 import { exposeMetrics } from '@operate-first/probot-metrics';
-import {
-  createTokenSecret,
-  deleteTokenSecret,
-} from '@operate-first/probot-kubernetes';
+import { deleteTokenSecret } from '@operate-first/probot-kubernetes';
 import {
   numberOfInstallTotal,
   numberOfUninstallTotal,
   numberOfActionsTotal,
 } from './lib/counters';
 
-import { wrapOperationWithMetrics } from './lib/util';
+import {
+  createTokenSecret,
+  verifySecret,
+  wrapOperationWithMetrics,
+} from './lib/util';
 import { handleIssueForm } from './eventHandlers/handleIssueForm';
 import { handleCommands, parseCommands } from './eventHandlers/handleCommand';
 
@@ -30,7 +31,7 @@ export default (
   router.get('/healthz', (_, response) => response.status(200).send('OK'));
   exposeMetrics(router, '/metrics');
 
-  app.onAny((context) => {
+  app.onAny(async (context) => {
     // On any event inc() the counter
     if ('installation' in context.payload && 'action' in context.payload) {
       numberOfActionsTotal
@@ -40,6 +41,7 @@ export default (
         })
         .inc();
     }
+    await verifySecret(context);
   });
 
   app.on(
