@@ -2,6 +2,7 @@ import parse from '@operate-first/probot-issue-form';
 import { createPipelineRun } from '../lib/util';
 import { Context } from 'probot';
 import { comments } from '../lib/comments';
+import { HttpError } from '@kubernetes/client-node';
 
 export const handleIssueForm = async (
   context: Context<'issue_comment.created'> | Context<'issues.opened'>
@@ -78,7 +79,14 @@ export const handleIssueForm = async (
   } catch (e) {
     const msg = comments.FORM_TASK_CREATION_FAIL;
     await context.octokit.issues.createComment(context.issue({ body: msg }));
-    context.log.error(msg, e);
+
+    if (e instanceof HttpError && e.body.reason == 'Unauthorized'){
+      context.log.error(
+        `Encountered error when trying to create PipelineRun. Reason: ${e.body.reason}. ` +
+        "Please ensure probot has sufficient access to k8s cluster."
+      );
+    } else context.log.error(msg, e);
+
     throw e;
   }
 };
