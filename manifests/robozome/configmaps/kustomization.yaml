@@ -7,3 +7,5 @@ configMapGenerator:
     files:
       - scripts/create-pr.sh
       - scripts/setup-get-env.sh
+      - scripts/dump-payload.sh
+      - scripts/feedback.sh

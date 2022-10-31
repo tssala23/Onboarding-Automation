@@ -1,5 +1,5 @@
 import parse from '@operate-first/probot-issue-form';
-import { createPipelineRun } from '../lib/util';
+import { createPipelineRun, IssueFormPipelineParams } from '../lib/util';
 import { Context } from 'probot';
 import { comments } from '../lib/comments';
 import { HttpError } from '@kubernetes/client-node';
@@ -44,29 +44,16 @@ export const handleIssueForm = async (
 
     const payload = JSON.stringify(JSON.stringify(data));
 
-    const res = await createPipelineRun(
-      'robozome-onboarding',
-      taskType,
-      context,
-      [
-        {
-          name: 'PAYLOAD',
-          value: payload,
-        },
-        {
-          name: 'ISSUE_URL',
-          value: issue,
-        },
-        {
-          name: 'SCRIPT_PATH',
-          value: scriptPath,
-        },
-        {
-          name: 'REPO_NAME',
-          value: targetRepo,
-        },
-      ]
-    );
+    const params: IssueFormPipelineParams = {
+      SOURCE_REPO: context.payload.repository.name,
+      TARGET_REPO: targetRepo,
+      ISSUE_NUMBER: context.payload.issue.number,
+      PAYLOAD: payload,
+      TASK_TYPE: taskType,
+      SCRIPT_PATH: scriptPath,
+    };
+
+    const res = await createPipelineRun('robozome-onboarding', params, context);
 
     if (res.response.statusCode != 201) {
       context.log.error(
@@ -80,13 +67,14 @@ export const handleIssueForm = async (
     const msg = comments.FORM_TASK_CREATION_FAIL;
     await context.octokit.issues.createComment(context.issue({ body: msg }));
 
-    if (e instanceof HttpError && e.body.reason == 'Unauthorized'){
+    if (e instanceof HttpError && e.body.reason == 'Unauthorized') {
       context.log.error(
         `Encountered error when trying to create PipelineRun. Reason: ${e.body.reason}. ` +
-        "Please ensure probot has sufficient access to k8s cluster."
+          'Please ensure probot has sufficient access to k8s cluster.'
       );
-    } else context.log.error(msg, e);
-
-    throw e;
+    } else {
+      context.log.error(msg, e);
+      throw e;
+    }
   }
 };

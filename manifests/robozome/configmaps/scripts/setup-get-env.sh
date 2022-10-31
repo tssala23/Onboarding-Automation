@@ -10,4 +10,4 @@ echo -n ${DEFAULT_BRANCH} > /mnt/shared/default_branch
 git config --global user.email "$APP_ID+robozome[bot]@users.noreply.github.com"
 git config --global user.name "robozome[bot]"
 
-git clone ${GITHUB_REPO}
+git clone ${REPO_NAME}

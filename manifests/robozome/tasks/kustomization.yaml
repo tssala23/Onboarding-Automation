@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
 - issue-form-automation-moustache.yaml
 - issue-form-automation-bash.yaml
+- feedback.yaml

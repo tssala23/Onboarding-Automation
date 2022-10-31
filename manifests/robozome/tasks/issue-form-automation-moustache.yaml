@@ -15,7 +15,7 @@ spec:
       default: ""
   steps:
     - name: create-patch
-      image: opf-toolbox
+      image: quay.io/operate-first/opf-toolbox
       volumeMounts:
         - mountPath: /mnt/config/robozome
           name: patch
@@ -28,7 +28,7 @@ spec:
         mustache /mnt/shared/data.yaml /mnt/config/robozome/onboarding.patch > /mnt/shared/onboarding.patch
 
     - name: apply-push-patch
-      image: opf-toolbox
+      image: quay.io/operate-first/opf-toolbox
       volumeMounts:
         - mountPath: /mnt/shared
           name: shared-data

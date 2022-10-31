@@ -7,9 +7,11 @@ spec:
     - name: shared-data
     - name: utility-scripts
   params:
-    - name: REPO_NAME
+    - name: SOURCE_REPO
       type: string
-    - name: SECRET_NAME
+    - name: TARGET_REPO
+      type: string
+    - name: ISSUE_NUMBER
       type: string
     - name: PAYLOAD
       type: string
@@ -17,27 +19,39 @@ spec:
       type: string
     - name: SCRIPT_PATH
       type: string
+    - name: SECRET_NAME
+      type: string
   finally:
-    - name: verify
+    - name: feedback
       params:
-        - name: appName
-          value: testappname
+        - name: SOURCE_REPO
+          value: $(params.SOURCE_REPO)
+        - name: TARGET_REPO
+          value: $(params.TARGET_REPO)
+        - name: ISSUE_NUMBER
+          value: $(params.ISSUE_NUMBER)
+        - name: SCRIPT_PATH
+          value: $(params.SCRIPT_PATH)
+        - name: SECRET_NAME
+          value: $(params.SECRET_NAME)
       taskRef:
         kind: Task
-        name: verify
+        name: feedback
   tasks:
     - name: issue-form-automation-bash
       params:
-        - name: REPO_NAME
-          value: $(params.REPO_NAME)
-        - name: SECRET_NAME
-          value: $(params.SECRET_NAME)
+        - name: SOURCE_REPO
+          value: $(params.SOURCE_REPO)
+        - name: TARGET_REPO
+          value: $(params.TARGET_REPO)
+        - name: ISSUE_NUMBER
+          value: $(params.ISSUE_NUMBER)
         - name: PAYLOAD
           value: $(params.PAYLOAD)
-        - name: TASK_TYPE
-          value: $(params.TASK_TYPE)
         - name: SCRIPT_PATH
           value: $(params.SCRIPT_PATH)
+        - name: SECRET_NAME
+          value: $(params.SECRET_NAME)
       when:
         - input: "$(params.TASK_TYPE)"
           operator: in
@@ -53,14 +67,18 @@ spec:
       timeout: "5m"
     - name: issue-form-automation-moustache
       params:
-        - name: REPO_NAME
-          value: $(params.REPO_NAME)
-        - name: SECRET_NAME
-          value: $(params.SECRET_NAME)
+        - name: SOURCE_REPO
+          value: $(params.SOURCE_REPO)
+        - name: TARGET_REPO
+          value: $(params.TARGET_REPO)
+        - name: ISSUE_NUMBER
+          value: $(params.ISSUE_NUMBER)
         - name: PAYLOAD
           value: $(params.PAYLOAD)
-        - name: TASK_TYPE
-          value: $(params.TASK_TYPE)
+        - name: SCRIPT_PATH
+          value: $(params.SCRIPT_PATH)
+        - name: SECRET_NAME
+          value: $(params.SECRET_NAME)
       when:
         - input: "$(params.TASK_TYPE)"
           operator: in

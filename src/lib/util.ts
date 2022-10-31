@@ -37,22 +37,49 @@ export const wrapOperationWithMetrics = async (
   optick(response.status);
 };
 
+export declare type IssueFormPipelineParams = {
+  SOURCE_REPO: string;
+  TARGET_REPO: string;
+  ISSUE_NUMBER: number;
+  PAYLOAD: string;
+  TASK_TYPE: string;
+  SCRIPT_PATH: string;
+};
+
 export const createPipelineRun = async (
   name: string,
-  taskType: string,
-  context: Context<'issue_comment.created'> | Context<'issues.opened'>,
-  extraParams: Array<Record<string, unknown>> = []
+  issuePipeline: IssueFormPipelineParams,
+  context: Context<'issue_comment.created'> | Context<'issues.opened'>
 ): Promise<{ response: IncomingMessage; body: object }> => {
   const params = [
+    {
+      name: 'SOURCE_REPO',
+      value: issuePipeline.SOURCE_REPO,
+    },
+    {
+      name: 'TARGET_REPO',
+      value: issuePipeline.TARGET_REPO,
+    },
+    {
+      name: 'ISSUE_NUMBER',
+      value: issuePipeline.ISSUE_NUMBER,
+    },
+    {
+      name: 'PAYLOAD',
+      value: issuePipeline.PAYLOAD,
+    },
+    {
+      name: 'TASK_TYPE',
+      value: issuePipeline.TASK_TYPE,
+    },
+    {
+      name: 'SCRIPT_PATH',
+      value: issuePipeline.SCRIPT_PATH,
+    },
     {
       name: 'SECRET_NAME',
       value: getTokenSecretName(context),
     },
-    {
-      name: 'TASK_TYPE',
-      value: taskType,
-    },
-    ...extraParams,
   ];
 
   const pipelineRunpayload = {
@@ -114,17 +141,16 @@ export const verifySecret = async (context: any) => {
       context.log.info('Did not find Probot Secret in namespace, creating...');
       await createTokenSecret(context);
     }
-    if (e instanceof HttpError && e.body.reason == 'Unauthorized'){
+    if (e instanceof HttpError && e.body.reason == 'Unauthorized') {
       context.log.error(
         `Encountered error when trying to verify Probot Secret in namespace. Reason: ${e.body.reason}. ` +
-        "Please ensure probot has sufficient access to k8s cluster."
+          'Please ensure probot has sufficient access to k8s cluster.'
       );
-    }
-    else {
+    } else {
       context.log.error(
         `Encountered error when trying to verify Probot Secret in namespace.`
       );
-      throw e
+      throw e;
     }
   }
 };
@@ -142,7 +168,7 @@ export const createTokenSecret = async (context: any) => {
 
 // Use instead of probot-kubernetes implementation, as we want to be able to
 // create secrets outside of "installation.created" event contexts.
-const createSecretPayload = async (context: any) => {
+const createSecretPayload = async (context: any): Promise<k8s.V1Secret> => {
   const appAuth = (await context.octokit.auth({
     type: 'installation',
   })) as InstallationAccessTokenAuthentication;
@@ -166,6 +192,7 @@ const createSecretPayload = async (context: any) => {
 
 // Use instead of probot-kubernetes implementation
 // Add additional logging, and remove unneeded return
+// Add additional headers for successful patch
 const updateTokenSecret = async (
   context: any,
   expiry_date: Date,
@@ -178,12 +205,25 @@ const updateTokenSecret = async (
     expiry_date.getTime() < current_date.getTime() + expiration_threshold; // 5 minutes in milliseconds
   if (tokenExpired) {
     context.log.info('GH Token expired, updating...');
+    const secret = await createSecretPayload(context);
+
+    // To avoid: https://github.com/kubernetes-client/javascript/issues/862
+    const opts = {
+      headers: {
+        'Content-Type': 'application/merge-patch+json',
+      },
+    };
+
     await useApi(k8s.CoreV1Api).patchNamespacedSecret(
       secretName,
       namespace,
-      await createSecretPayload(context)
+      secret,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      opts
     );
     context.log.info('GH Token patched.');
   }
 };
-

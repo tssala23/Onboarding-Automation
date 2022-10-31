@@ -24,8 +24,6 @@ spec:
           secretKeyRef:
             name: $(params.SECRET_NAME)
             key: orgName
-      - name: REPO_NAME
-        value: $(params.REPO_NAME)
   workspaces:
     - name: utility-scripts
       mountPath: /utility-scripts
@@ -33,20 +31,15 @@ spec:
       name: shared-data
   steps:
     - name: dump-payload
-      image: quay.io/operate-first/opf-toolbox:v0.11.0
+      image: quay.io/operate-first/opf-toolbox
       workingDir: /mnt/shared
-      script: |
-        #!/bin/bash
-        echo "Copying Payload to Shared volume /mnt/shared/data.yaml..."
-        echo $(params.PAYLOAD) >> /mnt/shared/data.yaml
-        echo "Printing contents of shared data.yaml ..."
-        cat /mnt/shared/data.yaml
+      command: ['/utility-scripts/dump-payload.sh']
     - name: setup-git-env
-      image: opf-toolbox
+      image: quay.io/operate-first/opf-toolbox
       workingDir: /mnt/shared
       command: ['/utility-scripts/setup-get-env.sh']
     - name: apply-changes
-      image: opf-toolbox
+      image: quay.io/operate-first/opf-toolbox
       workingDir: /mnt/shared/$(params.REPO_NAME)
       command: ['./$(params.SCRIPT_PATH)']
 #    - name: create-pr
