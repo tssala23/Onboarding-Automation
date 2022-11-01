@@ -4,7 +4,7 @@ metadata:
   name: issue-form-automation-bash
 spec:
   params:
-    - name: REPO_NAME
+    - name: TARGET_REPO
       type: string
     - name: SECRET_NAME
       type: string
@@ -40,7 +40,7 @@ spec:
       command: ['/utility-scripts/setup-get-env.sh']
     - name: apply-changes
       image: quay.io/operate-first/opf-toolbox
-      workingDir: /mnt/shared/$(params.REPO_NAME)
+      workingDir: /mnt/shared/$(params.TARGET_REPO)
       command: ['./$(params.SCRIPT_PATH)']
 #    - name: create-pr
 #      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead

@@ -40,7 +40,7 @@ export const wrapOperationWithMetrics = async (
 export declare type IssueFormPipelineParams = {
   SOURCE_REPO: string;
   TARGET_REPO: string;
-  ISSUE_NUMBER: number;
+  ISSUE_NUMBER: string;
   PAYLOAD: string;
   TASK_TYPE: string;
   SCRIPT_PATH: string;

@@ -47,7 +47,7 @@ export const handleIssueForm = async (
     const params: IssueFormPipelineParams = {
       SOURCE_REPO: context.payload.repository.name,
       TARGET_REPO: targetRepo,
-      ISSUE_NUMBER: context.payload.issue.number,
+      ISSUE_NUMBER: String(context.payload.issue.number),
       PAYLOAD: payload,
       TASK_TYPE: taskType,
       SCRIPT_PATH: scriptPath,
@@ -67,10 +67,10 @@ export const handleIssueForm = async (
     const msg = comments.FORM_TASK_CREATION_FAIL;
     await context.octokit.issues.createComment(context.issue({ body: msg }));
 
-    if (e instanceof HttpError && e.body.reason == 'Unauthorized') {
+    if (e instanceof HttpError) {
       context.log.error(
-        `Encountered error when trying to create PipelineRun. Reason: ${e.body.reason}. ` +
-          'Please ensure probot has sufficient access to k8s cluster.'
+        'Encountered error when trying to create PipelineRun.\n' +
+          `Reason: ${e.body.reason}\nStatus Code: ${e.statusCode}\nMessage: ${e.body.message}`
       );
     } else {
       context.log.error(msg, e);

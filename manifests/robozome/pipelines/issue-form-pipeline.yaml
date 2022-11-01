@@ -37,6 +37,9 @@ spec:
       taskRef:
         kind: Task
         name: feedback
+      workspaces:
+        - name: utility-scripts
+          workspace: utility-scripts
   tasks:
     - name: issue-form-automation-bash
       params:

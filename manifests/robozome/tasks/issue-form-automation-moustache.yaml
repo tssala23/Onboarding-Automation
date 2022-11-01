@@ -5,7 +5,7 @@ metadata:
   name: issue-form-automation-moustache
 spec:
   params:
-    - name: REPO_NAME
+    - name: TARGET_REPO
       type: string
       default: .github
     - name: SECRET_NAME
@@ -54,7 +54,7 @@ spec:
         DEFAULT_BRANCH=$( curl \
           -H "Accept: application/vnd.github.v3+json" \
           -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-          https://api.github.com/repos/$ORG_NAME/$(params.REPO_NAME) 2>/dev/null \
+          https://api.github.com/repos/$ORG_NAME/$(params.TARGET_REPO) 2>/dev/null \
           | yq e '.default_branch' - | sed 's/\"//g' )
         echo -n $DEFAULT_BRANCH > /mnt/shared/default_branch
 
@@ -62,8 +62,8 @@ spec:
         git config --global user.name "robozome[bot]"
 
         echo "Cloning repo"
-        git clone https://x-access-token:$GITHUB_TOKEN@github.com/$ORG_NAME/$(param.REPO_NAME)
-        cd $(params.REPO_NAME)
+        git clone https://x-access-token:$GITHUB_TOKEN@github.com/$ORG_NAME/$(param.TARGET_REPO)
+        cd $(params.TARGET_REPO)
 
         git checkout -b "onboarding/$(yq e ".namespace" /tmp/data.yaml)"
         git apply /mnt/shared/onboarding.patch
@@ -100,7 +100,7 @@ spec:
         github_token = os.environ['GITHUB_TOKEN']
         org_name = os.environ['ORG_NAME']
         default_branch = open("/mnt/shared/default_branch", "r").read()
-        repo_full_path = f"{org_name}/$(params.REPO_NAME)"
+        repo_full_path = f"{org_name}/$(params.TARGET_REPO)"
 
         open_pr_url = f"/repos/{repo_full_path}/pulls"
 
