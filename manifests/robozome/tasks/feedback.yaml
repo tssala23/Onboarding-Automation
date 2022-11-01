@@ -41,4 +41,4 @@ spec:
   steps:
     - name: feedback
       image: quay.io/operate-first/opf-toolbox
-      command: ['/utility-scripts/feedback.sh']
+      command: ["/bin/sh", "-c", '/utility-scripts/feedback.sh']

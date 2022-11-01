@@ -24,6 +24,14 @@ spec:
           secretKeyRef:
             name: $(params.SECRET_NAME)
             key: orgName
+      - name: TARGET_REPO
+        value: $(params.TARGET_REPO)
+      - name: SECRET_NAME
+        value: $(params.SECRET_NAME)
+      - name: PAYLOAD
+        value: $(params.PAYLOAD)
+      - name: SCRIPT_PATH
+        value: $(params.SCRIPT_PATH)
   workspaces:
     - name: utility-scripts
       mountPath: /utility-scripts
@@ -33,15 +41,15 @@ spec:
     - name: dump-payload
       image: quay.io/operate-first/opf-toolbox
       workingDir: /mnt/shared
-      command: ['/utility-scripts/dump-payload.sh']
+      command: ["/bin/sh", "-c", '/utility-scripts/dump-payload.sh']
     - name: setup-git-env
       image: quay.io/operate-first/opf-toolbox
       workingDir: /mnt/shared
-      command: ['/utility-scripts/setup-get-env.sh']
+      command: ["/bin/sh", "-c", '/utility-scripts/setup-get-env.sh']
     - name: apply-changes
       image: quay.io/operate-first/opf-toolbox
       workingDir: /mnt/shared/$(params.TARGET_REPO)
-      command: ['./$(params.SCRIPT_PATH)']
+      command: ["/bin/sh", "-c", './$(params.SCRIPT_PATH)']
 #    - name: create-pr
 #      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead
 #      workingDir: /mnt/shared/$(params.REPO_NAME)
