@@ -7,7 +7,7 @@ DEFAULT_BRANCH=$( curl \
   -H "Authorization: Bearer ${GITHUB_TOKEN}" \
   https://api.github.com/repos/${ORG_NAME}/${TARGET_REPO} 2>/dev/null \
   | yq e '.default_branch' - | sed 's/\"//g' )
-echo -n ${DEFAULT_BRANCH} > /mnt/shared/default_branch
+echo -n ${DEFAULT_BRANCH} > ${WORKING_DIR}/default_branch
 
 git config --global user.email "$APP_ID+robozome[bot]@users.noreply.github.com"
 git config --global user.name "robozome[bot]"

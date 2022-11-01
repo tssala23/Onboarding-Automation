@@ -51,6 +51,7 @@ export const handleIssueForm = async (
       PAYLOAD: payload,
       TASK_TYPE: taskType,
       SCRIPT_PATH: scriptPath,
+      WORKING_DIR: '/mnt/shared',
     };
 
     const res = await createPipelineRun('robozome-onboarding', params, context);

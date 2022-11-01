@@ -44,6 +44,7 @@ export declare type IssueFormPipelineParams = {
   PAYLOAD: string;
   TASK_TYPE: string;
   SCRIPT_PATH: string;
+  WORKING_DIR: string;
 };
 
 export const createPipelineRun = async (

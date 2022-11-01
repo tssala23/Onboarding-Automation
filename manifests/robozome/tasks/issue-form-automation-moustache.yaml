@@ -13,24 +13,26 @@ spec:
     - name: PAYLOAD
       type: string
       default: ""
+    - name: WORKING_DIR
+      type: string
   steps:
     - name: create-patch
       image: quay.io/operate-first/opf-toolbox
       volumeMounts:
         - mountPath: /mnt/config/robozome
           name: patch
-        - mountPath: /mnt/shared
+        - mountPath: $(params.WORKING_DIR)
           name: shared-data
       script: |
         #!/bin/bash
 
-        echo $(params.PAYLOAD) >> /mnt/shared/data.yaml
-        mustache /mnt/shared/data.yaml /mnt/config/robozome/onboarding.patch > /mnt/shared/onboarding.patch
+        echo $(params.PAYLOAD) >> $(params.WORKING_DIR)/data.yaml
+        mustache $(params.WORKING_DIR)/data.yaml /mnt/config/robozome/onboarding.patch > $(params.WORKING_DIR)/onboarding.patch
 
     - name: apply-push-patch
       image: quay.io/operate-first/opf-toolbox
       volumeMounts:
-        - mountPath: /mnt/shared
+        - mountPath: $(params.WORKING_DIR)
           name: shared-data
       env:
         - name: GITHUB_TOKEN
@@ -56,7 +58,7 @@ spec:
           -H "Authorization: Bearer ${GITHUB_TOKEN}" \
           https://api.github.com/repos/$ORG_NAME/$(params.TARGET_REPO) 2>/dev/null \
           | yq e '.default_branch' - | sed 's/\"//g' )
-        echo -n $DEFAULT_BRANCH > /mnt/shared/default_branch
+        echo -n $DEFAULT_BRANCH > $(params.WORKING_DIR)/default_branch
 
         git config --global user.email "$APP_ID+robozome[bot]@users.noreply.github.com"
         git config --global user.name "robozome[bot]"
@@ -66,7 +68,7 @@ spec:
         cd $(params.TARGET_REPO)
 
         git checkout -b "onboarding/$(yq e ".namespace" /tmp/data.yaml)"
-        git apply /mnt/shared/onboarding.patch
+        git apply $(params.WORKING_DIR)/onboarding.patch
         git add .
         git commit -m "Onboarding request for $(yq e ".namespace" /tmp/data.yaml)"
         git push -u origin HEAD
@@ -74,7 +76,7 @@ spec:
     - name: open-pr
       image: python
       volumeMounts:
-        - mountPath: /mnt/shared
+        - mountPath: $(params.WORKING_DIR)
           name: shared-data
       env:
         - name: GITHUB_TOKEN
@@ -99,12 +101,12 @@ spec:
 
         github_token = os.environ['GITHUB_TOKEN']
         org_name = os.environ['ORG_NAME']
-        default_branch = open("/mnt/shared/default_branch", "r").read()
+        default_branch = open("$(params.WORKING_DIR)/default_branch", "r").read()
         repo_full_path = f"{org_name}/$(params.TARGET_REPO)"
 
         open_pr_url = f"/repos/{repo_full_path}/pulls"
 
-        with open('/mnt/shared/data.yaml') as json_file:
+        with open('$(params.WORKING_DIR)/data.yaml') as json_file:
             data = json.load(json_file)
 
         data = {

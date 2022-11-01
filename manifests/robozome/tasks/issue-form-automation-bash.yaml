@@ -12,6 +12,8 @@ spec:
       type: string
     - name: SCRIPT_PATH
       type: string
+    - name: WORKING_DIR
+      type: string
   stepTemplate:
     env:
       - name: GITHUB_TOKEN
@@ -32,25 +34,27 @@ spec:
         value: $(params.PAYLOAD)
       - name: SCRIPT_PATH
         value: $(params.SCRIPT_PATH)
+      - name: WORKING_DIR
+        value: $(params.WORKING_DIR)
   workspaces:
     - name: utility-scripts
       mountPath: /utility-scripts
-    - mountPath: /mnt/shared
+    - mountPath: $(params.WORKING_DIR)
       name: shared-data
   steps:
     - name: dump-payload
       image: quay.io/operate-first/opf-toolbox
-      workingDir: /mnt/shared
+      workingDir: $(params.WORKING_DIR)
       command: ["/bin/sh", "-c", '/utility-scripts/dump-payload.sh']
     - name: setup-git-env
       image: quay.io/operate-first/opf-toolbox
-      workingDir: /mnt/shared
+      workingDir: $(params.WORKING_DIR)
       command: ["/bin/sh", "-c", '/utility-scripts/setup-get-env.sh']
     - name: apply-changes
       image: quay.io/operate-first/opf-toolbox
-      workingDir: /mnt/shared/$(params.TARGET_REPO)
+      workingDir: $(params.WORKING_DIR)
       command: ["/bin/sh", "-c", './$(params.SCRIPT_PATH)']
 #    - name: create-pr
 #      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead
-#      workingDir: /mnt/shared/$(params.REPO_NAME)
+#      workingDir: $(params.WORKING_DIR)/$(params.REPO_NAME)
 #      command: ['/utility-scripts/create-pr.sh']
