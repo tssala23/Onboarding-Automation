@@ -14,6 +14,7 @@ spec:
       type: string
     - name: SECRET_NAME
       type: string
+    - name: aggregateTasksStatus
   stepTemplate:
     env:
       - name: GITHUB_TOKEN
@@ -32,6 +33,8 @@ spec:
         value: $(params.SOURCE_REPO)
       - name: ISSUE_NUMBER
         value: $(params.ISSUE_NUMBER)
+      - name: TASKS_STATUS
+        value: $(params.aggregateTasksStatus)
   workspaces:
     - name: utility-scripts
       mountPath: /utility-scripts
