@@ -4,15 +4,21 @@ metadata:
   name: issue-form-automation-bash
 spec:
   params:
+    - name: SOURCE_REPO
+      type: string
     - name: TARGET_REPO
       type: string
-    - name: SECRET_NAME
+    - name: ISSUE_NUMBER
       type: string
     - name: PAYLOAD
       type: string
     - name: SCRIPT_PATH
       type: string
+    - name: SECRET_NAME
+      type: string
     - name: WORKING_DIR
+      type: string
+    - name: WORKING_BRANCH_PREFIX
       type: string
   stepTemplate:
     env:
@@ -28,14 +34,20 @@ spec:
             key: orgName
       - name: TARGET_REPO
         value: $(params.TARGET_REPO)
-      - name: SECRET_NAME
-        value: $(params.SECRET_NAME)
+      - name: SOURCE_REPO
+        value: $(params.SOURCE_REPO)
+      - name: ISSUE_NUMBER
+        value: $(params.ISSUE_NUMBER)
       - name: PAYLOAD
         value: $(params.PAYLOAD)
       - name: SCRIPT_PATH
         value: $(params.SCRIPT_PATH)
+      - name: SECRET_NAME
+        value: $(params.SECRET_NAME)
       - name: WORKING_DIR
         value: $(params.WORKING_DIR)
+      - name: WORKING_BRANCH_PREFIX
+        value: $(params.WORKING_BRANCH_PREFIX)
   workspaces:
     - name: utility-scripts
       mountPath: /utility-scripts
@@ -46,15 +58,11 @@ spec:
       image: quay.io/operate-first/opf-toolbox
       workingDir: $(params.WORKING_DIR)
       command: ["/bin/sh", "-c", '/utility-scripts/dump-payload.sh']
-    - name: setup-git-env
-      image: quay.io/operate-first/opf-toolbox
-      workingDir: $(params.WORKING_DIR)
-      command: ["/bin/sh", "-c", '/utility-scripts/setup-get-env.sh']
     - name: apply-changes
       image: quay.io/operate-first/opf-toolbox
       workingDir: $(params.WORKING_DIR)
-      command: ["/bin/sh", "-c", './$(params.SCRIPT_PATH)']
-#    - name: create-pr
-#      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead
-#      workingDir: $(params.WORKING_DIR)/$(params.REPO_NAME)
-#      command: ['/utility-scripts/create-pr.sh']
+      command: ["/bin/sh", "-c", '/utility-scripts/setup-and-execute.sh']
+    - name: create-pr
+      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead
+      workingDir: $(params.WORKING_DIR)
+      command: ['/utility-scripts/create-pr.sh']

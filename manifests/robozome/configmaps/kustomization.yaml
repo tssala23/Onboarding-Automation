@@ -6,6 +6,6 @@ configMapGenerator:
   - name: utility-scripts
     files:
       - scripts/create-pr.sh
-      - scripts/setup-get-env.sh
+      - scripts/setup-and-execute.sh
       - scripts/dump-payload.sh
       - scripts/feedback.sh

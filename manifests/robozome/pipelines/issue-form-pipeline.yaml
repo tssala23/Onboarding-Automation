@@ -23,6 +23,8 @@ spec:
       type: string
     - name: WORKING_DIR
       type: string
+    - name: WORKING_BRANCH_PREFIX
+      type: string
   finally:
     - name: feedback
       params:
@@ -61,6 +63,8 @@ spec:
           value: $(params.SECRET_NAME)
         - name: WORKING_DIR
           value: $(params.WORKING_DIR)
+        - name: WORKING_BRANCH_PREFIX
+          value: $(params.WORKING_BRANCH_PREFIX)
       when:
         - input: "$(params.TASK_TYPE)"
           operator: in
@@ -73,7 +77,7 @@ spec:
           workspace: shared-data
         - name: utility-scripts
           workspace: utility-scripts
-      timeout: "5m"
+      timeout: "10m"
     - name: issue-form-automation-moustache
       params:
         - name: SOURCE_REPO

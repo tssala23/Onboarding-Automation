@@ -45,6 +45,7 @@ export declare type IssueFormPipelineParams = {
   TASK_TYPE: string;
   SCRIPT_PATH: string;
   WORKING_DIR: string;
+  WORKING_BRANCH_PREFIX: string;
 };
 
 export const createPipelineRun = async (
@@ -80,6 +81,14 @@ export const createPipelineRun = async (
     {
       name: 'SECRET_NAME',
       value: getTokenSecretName(context),
+    },
+    {
+      name: 'WORKING_DIR',
+      value: issuePipeline.WORKING_DIR,
+    },
+    {
+      name: 'WORKING_BRANCH_PREFIX',
+      value: issuePipeline.WORKING_BRANCH_PREFIX,
     },
   ];
 
