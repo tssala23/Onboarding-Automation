@@ -5,21 +5,13 @@ metadata:
 spec:
   params:
     - name: SOURCE_REPO
-      type: string
     - name: TARGET_REPO
-      type: string
     - name: ISSUE_NUMBER
-      type: string
     - name: PAYLOAD
-      type: string
     - name: SCRIPT_PATH
-      type: string
     - name: SECRET_NAME
-      type: string
     - name: WORKING_DIR
-      type: string
     - name: WORKING_BRANCH_PREFIX
-      type: string
   stepTemplate:
     env:
       - name: GITHUB_TOKEN

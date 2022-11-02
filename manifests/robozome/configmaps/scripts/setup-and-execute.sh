@@ -15,7 +15,6 @@ echo "Executing script path ${WORKING_DIR}/${TARGET_REPO}/${SCRIPT_PATH}..."
 
 ${WORKING_DIR}/${TARGET_REPO}/${SCRIPT_PATH}
 
-# TODO: Check exit code
 if [ $? -eq 0 ]
 then
   echo "Script path finished execution successfully."

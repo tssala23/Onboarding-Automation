@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-echo "feedback code"
 
 msg="Issue Form Automation Finished with no errors reported. See the Pull Request linked within this Issue for details."
 
