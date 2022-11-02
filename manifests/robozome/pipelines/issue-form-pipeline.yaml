@@ -16,6 +16,8 @@ spec:
     - name: SECRET_NAME
     - name: WORKING_DIR
     - name: WORKING_BRANCH_PREFIX
+    - name: APP_USER_ID
+    - name: APP_SLUG
   finally:
     - name: feedback
       params:
@@ -58,6 +60,10 @@ spec:
           value: $(params.WORKING_DIR)
         - name: WORKING_BRANCH_PREFIX
           value: $(params.WORKING_BRANCH_PREFIX)
+        - name: APP_USER_ID
+          value: $(params.APP_USER_ID)
+        - name: APP_SLUG
+          value: $(params.APP_SLUG)
       when:
         - input: "$(params.TASK_TYPE)"
           operator: in

@@ -2,9 +2,8 @@
 
 echo "Setting up repository ${TARGET_REPO} clone for Org ${ORG_NAME}..."
 
-
-git config --global user.email "robozome[bot]@users.noreply.github.com"
-git config --global user.name "robozome[bot]"
+git config --global user.email ${APP_USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com
+git config --global user.name "${APP_SLUG}[bot]"
 git clone https://${ORG_NAME}:${GITHUB_TOKEN}@github.com/${ORG_NAME}/${TARGET_REPO}.git
 cd ${TARGET_REPO}
 git checkout -b ${WORKING_BRANCH_PREFIX}-${SOURCE_REPO}_${ISSUE_NUMBER}

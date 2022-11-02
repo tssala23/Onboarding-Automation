@@ -46,6 +46,8 @@ export declare type IssueFormPipelineParams = {
   SCRIPT_PATH: string;
   WORKING_DIR: string;
   WORKING_BRANCH_PREFIX: string;
+  APP_USER_ID: string;
+  APP_SLUG: string;
 };
 
 export const createPipelineRun = async (
@@ -89,6 +91,14 @@ export const createPipelineRun = async (
     {
       name: 'WORKING_BRANCH_PREFIX',
       value: issuePipeline.WORKING_BRANCH_PREFIX,
+    },
+    {
+      name: 'APP_USER_ID',
+      value: issuePipeline.APP_USER_ID,
+    },
+    {
+      name: 'APP_SLUG',
+      value: issuePipeline.APP_SLUG,
     },
   ];
 

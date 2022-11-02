@@ -3,6 +3,7 @@ import { createPipelineRun, IssueFormPipelineParams } from '../lib/util';
 import { Context } from 'probot';
 import { comments } from '../lib/comments';
 import { HttpError } from '@kubernetes/client-node';
+import { InstallationAccessTokenAuthentication } from '@octokit/auth-app';
 
 export const handleIssueForm = async (
   context: Context<'issue_comment.created'> | Context<'issues.opened'>
@@ -44,6 +45,16 @@ export const handleIssueForm = async (
 
     const payload = JSON.stringify(JSON.stringify(data));
 
+    const appAuth = (await context.octokit.auth({
+      type: 'installation',
+    })) as InstallationAccessTokenAuthentication;
+    const appname = await context.octokit.apps.getInstallation({
+      installation_id: appAuth.installationId,
+    });
+    const user = await context.octokit.users.getByUsername({
+      username: `${appname.data.app_slug}[bot]`,
+    });
+
     const params: IssueFormPipelineParams = {
       SOURCE_REPO: context.payload.repository.name,
       TARGET_REPO: targetRepo,
@@ -53,6 +64,8 @@ export const handleIssueForm = async (
       SCRIPT_PATH: scriptPath,
       WORKING_DIR: '/mnt/shared',
       WORKING_BRANCH_PREFIX: 'robozome',
+      APP_USER_ID: String(user.data.id),
+      APP_SLUG: appname.data.app_slug,
     };
 
     const res = await createPipelineRun('robozome-onboarding', params, context);

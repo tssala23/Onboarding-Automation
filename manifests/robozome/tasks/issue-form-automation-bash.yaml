@@ -12,6 +12,8 @@ spec:
     - name: SECRET_NAME
     - name: WORKING_DIR
     - name: WORKING_BRANCH_PREFIX
+    - name: APP_USER_ID
+    - name: APP_SLUG
   stepTemplate:
     env:
       - name: GITHUB_TOKEN
@@ -40,6 +42,10 @@ spec:
         value: $(params.WORKING_DIR)
       - name: WORKING_BRANCH_PREFIX
         value: $(params.WORKING_BRANCH_PREFIX)
+      - name: APP_USER_ID
+        value: $(params.APP_USER_ID)
+      - name: APP_SLUG
+        value: $(params.APP_SLUG)
   workspaces:
     - name: utility-scripts
       mountPath: /utility-scripts
@@ -55,6 +61,6 @@ spec:
       workingDir: $(params.WORKING_DIR)
       command: ["/bin/sh", "-c", '/utility-scripts/setup-and-execute.sh']
     - name: create-pr
-      image: ghcr.io/supportpal/github-gh-cli # TODO: Add gh cli to opf-toolbox and use that instead
+      image: ghcr.io/supportpal/github-gh-cli
       workingDir: $(params.WORKING_DIR)
       command: ['/utility-scripts/create-pr.sh']
