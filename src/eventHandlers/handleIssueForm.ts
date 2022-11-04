@@ -38,6 +38,7 @@ export const handleIssueForm = async (
       await context.octokit.issues.createComment(context.issue({ body: msg }));
 
       context.log.error(msg);
+      return;
     }
 
     // TODO: Add validation for label configs
@@ -72,7 +73,7 @@ export const handleIssueForm = async (
 
     if (res.response.statusCode != 201) {
       context.log.error(
-        'OCP response when creating TaskRun did not return with HTTP 201.'
+        'OCP response when creating PipelineRun did not return with HTTP 201.'
       );
     }
 

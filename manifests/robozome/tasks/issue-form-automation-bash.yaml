@@ -46,6 +46,8 @@ spec:
         value: $(params.APP_USER_ID)
       - name: APP_SLUG
         value: $(params.APP_SLUG)
+      - name: PAYLOAD_PATH
+        value: $(params.WORKING_DIR)/data.yaml
   workspaces:
     - name: utility-scripts
       mountPath: /utility-scripts
