@@ -2,6 +2,7 @@
 
 # Base image
 NODEJS_BASE_IMAGE=$(cat .s2ibase)
+TAG="${1:-latest}"
 
 # Checks whether the important programs are installed
 if ! command -v podman &> /dev/null; then
@@ -17,7 +18,7 @@ tmp_dir=$(mktemp -d -t probot-XXXXXXXXXX)
 
 s2i build . ${NODEJS_BASE_IMAGE} --as-dockerfile ${tmp_dir}/Containerfile
 cd $tmp_dir
-podman build -t probot .
+podman build -t quay.io/operate-first/robozome:$TAG .
 
 # Cleaning after the build
 rm -rf $tmp_dir
