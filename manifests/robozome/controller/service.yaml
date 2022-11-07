@@ -2,7 +2,7 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: controller
+  name: robozome
 spec:
   ports:
   - name: webhook
@@ -10,4 +10,4 @@ spec:
     port: 80
     targetPort: 3000
   selector:
-    app.kubernetes.io/component: controller
+    app.kubernetes.io/component: robozome

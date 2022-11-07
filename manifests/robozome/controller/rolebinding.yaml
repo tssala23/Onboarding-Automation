@@ -2,11 +2,11 @@
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: controller
+  name: robozome
 subjects:
 - kind: ServiceAccount
-  name: controller
+  name: robozome
 roleRef:
   kind: Role
-  name: controller
+  name: robozome
   apiGroup: rbac.authorization.k8s.io

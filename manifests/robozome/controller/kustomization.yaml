@@ -6,9 +6,8 @@ resources:
 - rolebinding.yaml
 - role.yaml
 - route.yaml
-- secret.yaml
 - serviceaccount.yaml
 - service.yaml
 - servicemonitor.yaml
 commonLabels:
-  app.kubernetes.io/component: controller
+  app.kubernetes.io/component: robozome
