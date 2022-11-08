@@ -4,7 +4,6 @@ metadata:
   name: issue-form-pipeline
 spec:
   workspaces:
-    - name: shared-data
     - name: utility-scripts
   params:
     - name: SOURCE_REPO
@@ -72,8 +71,6 @@ spec:
         kind: Task
         name: issue-form-automation-bash
       workspaces:
-        - name: shared-data
-          workspace: shared-data
         - name: utility-scripts
           workspace: utility-scripts
       timeout: "5m"
@@ -101,8 +98,6 @@ spec:
         kind: Task
         name: issue-form-automation-moustache
       workspaces:
-        - name: shared-data
-          workspace: shared-data
         - name: utility-scripts
           workspace: utility-scripts
       timeout: "5m"

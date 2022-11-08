@@ -14,7 +14,13 @@ spec:
     - name: WORKING_BRANCH_PREFIX
     - name: APP_USER_ID
     - name: APP_SLUG
+  volumes:
+    - name: shared-data
+      emptyDir: {}
   stepTemplate:
+    volumeMounts:
+      - name: shared-data
+        mountPath: $(params.WORKING_DIR)
     env:
       - name: GITHUB_TOKEN
         valueFrom:
@@ -51,8 +57,6 @@ spec:
   workspaces:
     - name: utility-scripts
       mountPath: /utility-scripts
-    - mountPath: $(params.WORKING_DIR)
-      name: shared-data
   steps:
     - name: dump-payload
       image: quay.io/operate-first/opf-toolbox

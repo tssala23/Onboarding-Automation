@@ -121,10 +121,6 @@ export const createPipelineRun = async (
             defaultMode: 110,
           },
         },
-        {
-          name: 'shared-data',
-          emptyDir: {},
-        },
       ],
     },
   };
