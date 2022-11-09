@@ -73,7 +73,7 @@ spec:
       workspaces:
         - name: utility-scripts
           workspace: utility-scripts
-      timeout: "5m"
+      timeout: "5m0s"
     - name: issue-form-automation-moustache
       params:
         - name: SOURCE_REPO
@@ -100,4 +100,4 @@ spec:
       workspaces:
         - name: utility-scripts
           workspace: utility-scripts
-      timeout: "5m"
+      timeout: "5m0s"
