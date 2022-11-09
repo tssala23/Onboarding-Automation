@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: feedback
+spec:
+  params:
+    - name: SOURCE_REPO
+    - name: TARGET_REPO
+    - name: ISSUE_NUMBER
+    - name: SCRIPT_PATH
+    - name: SECRET_NAME
+    - name: aggregateTasksStatus
+  stepTemplate:
+    env:
+      - name: GITHUB_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: $(params.SECRET_NAME)
+            key: token
+      - name: ORG_NAME
+        valueFrom:
+          secretKeyRef:
+            name: $(params.SECRET_NAME)
+            key: orgName
+      - name: TARGET_REPO
+        value: $(params.TARGET_REPO)
+      - name: SOURCE_REPO
+        value: $(params.SOURCE_REPO)
+      - name: ISSUE_NUMBER
+        value: $(params.ISSUE_NUMBER)
+      - name: TASKS_STATUS
+        value: $(params.aggregateTasksStatus)
+  workspaces:
+    - name: utility-scripts
+      mountPath: /utility-scripts
+  steps:
+    - name: feedback
+      image: quay.io/operate-first/opf-toolbox
+      command: ["/bin/sh", "-c", '/utility-scripts/feedback.sh']

@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: issue-form-automation-bash
+spec:
+  params:
+    - name: SOURCE_REPO
+    - name: TARGET_REPO
+    - name: ISSUE_NUMBER
+    - name: PAYLOAD
+    - name: SCRIPT_PATH
+    - name: SECRET_NAME
+    - name: WORKING_DIR
+    - name: WORKING_BRANCH_PREFIX
+    - name: APP_USER_ID
+    - name: APP_SLUG
+  volumes:
+    - name: shared-data
+      emptyDir: {}
+  stepTemplate:
+    volumeMounts:
+      - name: shared-data
+        mountPath: $(params.WORKING_DIR)
+    env:
+      - name: GITHUB_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: $(params.SECRET_NAME)
+            key: token
+      - name: ORG_NAME
+        valueFrom:
+          secretKeyRef:
+            name: $(params.SECRET_NAME)
+            key: orgName
+      - name: TARGET_REPO
+        value: $(params.TARGET_REPO)
+      - name: SOURCE_REPO
+        value: $(params.SOURCE_REPO)
+      - name: ISSUE_NUMBER
+        value: $(params.ISSUE_NUMBER)
+      - name: PAYLOAD
+        value: $(params.PAYLOAD)
+      - name: SCRIPT_PATH
+        value: $(params.SCRIPT_PATH)
+      - name: SECRET_NAME
+        value: $(params.SECRET_NAME)
+      - name: WORKING_DIR
+        value: $(params.WORKING_DIR)
+      - name: WORKING_BRANCH_PREFIX
+        value: $(params.WORKING_BRANCH_PREFIX)
+      - name: APP_USER_ID
+        value: $(params.APP_USER_ID)
+      - name: APP_SLUG
+        value: $(params.APP_SLUG)
+      - name: PAYLOAD_PATH
+        value: $(params.WORKING_DIR)/data.yaml
+  workspaces:
+    - name: utility-scripts
+      mountPath: /utility-scripts
+  steps:
+    - name: dump-payload
+      image: quay.io/operate-first/opf-toolbox
+      workingDir: $(params.WORKING_DIR)
+      command: ["/bin/sh", "-c", '/utility-scripts/dump-payload.sh']
+    - name: apply-changes
+      image: quay.io/operate-first/opf-toolbox
+      workingDir: $(params.WORKING_DIR)
+      command: ["/bin/sh", "-c", '/utility-scripts/setup-and-execute.sh']
+    - name: create-pr
+      image: ghcr.io/supportpal/github-gh-cli
+      workingDir: $(params.WORKING_DIR)
+      command: ['/utility-scripts/create-pr.sh']

@@ -1,0 +1,103 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: issue-form-pipeline
+spec:
+  workspaces:
+    - name: utility-scripts
+  params:
+    - name: SOURCE_REPO
+    - name: TARGET_REPO
+    - name: ISSUE_NUMBER
+    - name: PAYLOAD
+    - name: TASK_TYPE
+    - name: SCRIPT_PATH
+    - name: SECRET_NAME
+    - name: WORKING_DIR
+    - name: WORKING_BRANCH_PREFIX
+    - name: APP_USER_ID
+    - name: APP_SLUG
+  finally:
+    - name: feedback
+      params:
+        - name: SOURCE_REPO
+          value: $(params.SOURCE_REPO)
+        - name: TARGET_REPO
+          value: $(params.TARGET_REPO)
+        - name: ISSUE_NUMBER
+          value: $(params.ISSUE_NUMBER)
+        - name: SCRIPT_PATH
+          value: $(params.SCRIPT_PATH)
+        - name: SECRET_NAME
+          value: $(params.SECRET_NAME)
+        - name: aggregateTasksStatus
+          value: $(tasks.status)
+        - name: WORKING_DIR
+          value: $(params.WORKING_DIR)
+      taskRef:
+        kind: Task
+        name: feedback
+      workspaces:
+        - name: utility-scripts
+          workspace: utility-scripts
+  tasks:
+    - name: issue-form-automation-bash
+      params:
+        - name: SOURCE_REPO
+          value: $(params.SOURCE_REPO)
+        - name: TARGET_REPO
+          value: $(params.TARGET_REPO)
+        - name: ISSUE_NUMBER
+          value: $(params.ISSUE_NUMBER)
+        - name: PAYLOAD
+          value: $(params.PAYLOAD)
+        - name: SCRIPT_PATH
+          value: $(params.SCRIPT_PATH)
+        - name: SECRET_NAME
+          value: $(params.SECRET_NAME)
+        - name: WORKING_DIR
+          value: $(params.WORKING_DIR)
+        - name: WORKING_BRANCH_PREFIX
+          value: $(params.WORKING_BRANCH_PREFIX)
+        - name: APP_USER_ID
+          value: $(params.APP_USER_ID)
+        - name: APP_SLUG
+          value: $(params.APP_SLUG)
+      when:
+        - input: "$(params.TASK_TYPE)"
+          operator: in
+          values: [ "bash"]
+      taskRef:
+        kind: Task
+        name: issue-form-automation-bash
+      workspaces:
+        - name: utility-scripts
+          workspace: utility-scripts
+      timeout: "5m"
+    - name: issue-form-automation-moustache
+      params:
+        - name: SOURCE_REPO
+          value: $(params.SOURCE_REPO)
+        - name: TARGET_REPO
+          value: $(params.TARGET_REPO)
+        - name: ISSUE_NUMBER
+          value: $(params.ISSUE_NUMBER)
+        - name: PAYLOAD
+          value: $(params.PAYLOAD)
+        - name: SCRIPT_PATH
+          value: $(params.SCRIPT_PATH)
+        - name: SECRET_NAME
+          value: $(params.SECRET_NAME)
+        - name: WORKING_DIR
+          value: $(params.WORKING_DIR)
+      when:
+        - input: "$(params.TASK_TYPE)"
+          operator: in
+          values: [ "moustache" ]
+      taskRef:
+        kind: Task
+        name: issue-form-automation-moustache
+      workspaces:
+        - name: utility-scripts
+          workspace: utility-scripts
+      timeout: "5m"

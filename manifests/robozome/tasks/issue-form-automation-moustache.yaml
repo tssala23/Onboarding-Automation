@@ -1,0 +1,150 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: issue-form-automation-moustache
+spec:
+  params:
+    - name: TARGET_REPO
+      type: string
+      default: .github
+    - name: SECRET_NAME
+      type: string
+    - name: PAYLOAD
+      type: string
+      default: ""
+    - name: WORKING_DIR
+      type: string
+  steps:
+    - name: create-patch
+      image: quay.io/operate-first/opf-toolbox
+      volumeMounts:
+        - mountPath: /mnt/config/robozome
+          name: patch
+        - mountPath: $(params.WORKING_DIR)
+          name: shared-data
+      script: |
+        #!/bin/bash
+
+        echo $(params.PAYLOAD) >> $(params.WORKING_DIR)/data.yaml
+        mustache $(params.WORKING_DIR)/data.yaml /mnt/config/robozome/onboarding.patch > $(params.WORKING_DIR)/onboarding.patch
+
+    - name: apply-push-patch
+      image: quay.io/operate-first/opf-toolbox
+      volumeMounts:
+        - mountPath: $(params.WORKING_DIR)
+          name: shared-data
+      env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.SECRET_NAME)
+              key: token
+        - name: ORG_NAME
+          valueFrom:
+            secretKeyRef:
+              name: $(params.SECRET_NAME)
+              key: orgName
+        - name: APP_ID
+          valueFrom:
+            secretKeyRef:
+              name: robozome-controller
+              key: app_id
+      script: |
+        #!/bin/bash
+
+        DEFAULT_BRANCH=$( curl \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          https://api.github.com/repos/$ORG_NAME/$(params.TARGET_REPO) 2>/dev/null \
+          | yq e '.default_branch' - | sed 's/\"//g' )
+        echo -n $DEFAULT_BRANCH > $(params.WORKING_DIR)/default_branch
+
+        git config --global user.email "$APP_ID+robozome[bot]@users.noreply.github.com"
+        git config --global user.name "robozome[bot]"
+
+        echo "Cloning repo"
+        git clone https://x-access-token:$GITHUB_TOKEN@github.com/$ORG_NAME/$(param.TARGET_REPO)
+        cd $(params.TARGET_REPO)
+
+        git checkout -b "onboarding/$(yq e ".namespace" /tmp/data.yaml)"
+        git apply $(params.WORKING_DIR)/onboarding.patch
+        git add .
+        git commit -m "Onboarding request for $(yq e ".namespace" /tmp/data.yaml)"
+        git push -u origin HEAD
+
+    - name: open-pr
+      image: python
+      volumeMounts:
+        - mountPath: $(params.WORKING_DIR)
+          name: shared-data
+      env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.SECRET_NAME)
+              key: token
+        - name: ORG_NAME
+          valueFrom:
+            secretKeyRef:
+              name: $(params.SECRET_NAME)
+              key: orgName
+      script: |
+        #!/usr/libexec/platform-python
+
+        """Generated from: https://hub.tekton.dev/tekton/task/github-open-pr"""
+
+        import json
+        import os
+        import sys
+        import http.client
+
+        github_token = os.environ['GITHUB_TOKEN']
+        org_name = os.environ['ORG_NAME']
+        default_branch = open("$(params.WORKING_DIR)/default_branch", "r").read()
+        repo_full_path = f"{org_name}/$(params.TARGET_REPO)"
+
+        open_pr_url = f"/repos/{repo_full_path}/pulls"
+
+        with open('$(params.WORKING_DIR)/data.yaml') as json_file:
+            data = json.load(json_file)
+
+        data = {
+            "head": "Onboarding/" + data['namespace'],
+            "base": default_branch,
+            "title": "Onboarding request",
+            "body": "Onboarding request for " + data['namespace'] + " to the " + data['cluster'] + "\nDescription: " + data['project-description'] + "\nQuota: " + data['quota'] + "\nCustom Quota: " + data['custom-quota'] + "\nGPG key: " + data['gpg']
+        }
+        print("Sending this data to GitHub: ")
+        print(data)
+
+        authHeader = "Bearer " + github_token
+
+        conn = http.client.HTTPSConnection("api.github.com")
+        conn.request(
+            "POST",
+            open_pr_url,
+            body=json.dumps(data),
+            headers={
+                "User-Agent": "Robozome",
+                "Authorization": authHeader,
+                "Accept": "application/vnd.github.v3+json ",
+            })
+        resp = conn.getresponse()
+        if not str(resp.status).startswith("2"):
+            print("Error: %d" % (resp.status))
+            print(resp.read())
+            sys.exit(1)
+        else:
+            # https://docs.github.com/en/rest/reference/pulls#create-a-pull-request
+            body = json.loads(resp.read().decode())
+
+            print(f"GitHub pull request created for {repo_full_path}: "
+                  f'number={body["number"]} url={body["html_url"]}')
+
+  volumes:
+    - emptyDir: {}
+      name: shared-data
+    - name: patch
+      configMap:
+        name: robozome-robozome
