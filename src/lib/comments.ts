@@ -8,6 +8,15 @@ export const comments = {
     'Please double check the issue template corresponding with this issue:' +
     `${issue_url}.\n Ensure all required labels are present. Then try again.`,
 
+  DISPLAY_PAYLOAD: (payload: string) =>
+    'The payload that will be generated using this form will be: \n' +
+    '```json\n' +
+    payload +
+    '\n' +
+    '```',
+
+  DISPLAY_PAYLOAD_FAIL: 'Could not create payload, invalid issue form.',
+
   FORM_TASK_CREATION_FAIL:
     'Automation procedure failed, Robozome failed to successfully submit TaskRun job to OCP namespace.',
 

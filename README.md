@@ -96,11 +96,6 @@ Now, in the repo `$SCRIPTS_REPO` add the script that will be executed in the loc
 In the automation script, you have the following environment variables available:
 
 * PAYLOAD_PATH - location of the issue form inputs, [see here][2] for the format
-
-> If you are unsure about the format of the payload, you can create the issue form, create an issue using the form, then
-> inspect the task "dump-payload" by running `oc logs -c step-dump-payload robozome-onboarding-*-issue-form-automation-*`
-> replacing the * in the pod name accordingly.
-
 * ORG_NAME - the organization this app is deployed in, and where issue/form creation/responses are being generated
 * SOURCE_REPO - The repo where the issue was created
 * ISSUE_NUMBER - The number of the issue where the issue form was created
@@ -126,6 +121,14 @@ Task types are located [here][6]. They are regular Tekton `Tasks`. To add a new 
 `issue-form-automation-$YOUR-TYPE`, replace `$YOUR-TYPE` accordingly.
 
 Add the Task to the pipeline [here][7].
+
+### Robozome commands
+
+On issue forms, you can run a couple of helpful commands:
+
+* `/robozome retry` : will re-run the automation pipeline against the designated script
+* `/robozome payload` : will show what the payload in $PAYLOAD_PATH will look like, this is useful when generating your
+  own scripts for execution against the issue form input.
 
 ### Contributing guide
 
