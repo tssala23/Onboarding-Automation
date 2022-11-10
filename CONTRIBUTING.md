@@ -88,6 +88,11 @@ Reference: [docs](https://probot.github.io/docs/configuration/)
    - `APP_ID` matching your GitHub Application config
    - Optionally you should also set `PRIVATE_KEY` if your app's private key is located outside of the repository directory, see [Probot documentation](https://probot.github.io/docs/development/#manually-configuring-a-github-app) for more details
 
+> Note: If you are having issues using https://smee.io , you can also deploy your own instance of smee.
+> We provide deployment artifacts for your own smee deployment within the `./manifests/smee` directory.
+> For example in Openshift, simply run `oc apply -k manifests/smee -n <your-smee-namespace>` to set up a quick
+> deployment.
+
 3. Run the app
 
    ```sh
