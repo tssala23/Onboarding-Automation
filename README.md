@@ -1,83 +1,140 @@
-<p align="center">
-  <a href="https://github.com/open-services-group/probot-template">
-    <img src="https://raw.githubusercontent.com/open-services-group/probot-template/main/static/robot.svg" width="160" alt="Probot's logo, a cartoon robot" />
-  </a>
-</p>
-<h3 align="center"><a href="https://github.com/open-services-group/probot-template">Probot on Kubernetes - template repository</a></h3>
-<p align="center">
-  <a href="https://github.com/open-services-group/probot-template">
-    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/open-services-group/probot-template">
-  </a>
-  <a href="https://github.com/open-services-group/probot-template/blob/main/LICENSE">
-    <img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg">
-  </a>
-  <a href="https://github.com/open-services-group/probot-template/issues?q=is%3Aissue+is%3Aopen+label%3Akind%2Fbug">
-    <img alt="Reported bugs" src="https://img.shields.io/github/issues-search/open-services-group/probot-template?color=red&label=reported%20bugs&query=is%3Aopen%20label%3Akind%2Fbug">
-  </a>
-  <a href="https://github.com/open-services-group/probot-template/issues?q=is%3Aissue+is%3Aopen+label%3Akind%2Fbug">
-    <img alt="Feature requests" src="https://img.shields.io/github/issues-search/open-services-group/probot-template?label=feature%20requests&query=is%3Aopen%20label%3Akind%2Ffeature">
-  </a>
-</p>
+## Robozome - Github Issue form automation via Tekton
 
----
-## How to use
+Robozome allows you to create an automated workflow that consumes a GitHub issue form, and automatically creates a
+pull request based of those form inputs against a repo of your choice. You supply the form and input handling logic,
+and Robozome takes care of the rest.
 
-1. Create a new repository from this template
-2. Template all references
+### How it works
 
-    ```sh
-    cat <<EOM > /tmp/data.yaml
-    name: application-name
-    description: Some text
-    prod-namespace: namespaceA
-    stage-namespace: namespaceB
-    image: quay.io/org/repo
-    team: team-name
-    org-repo: org/repo
-    EOM
+In the background, Robozome reads [Github Issue Forms][1] and uses the Operate-First issue-form [parser][2] to convert
+the form into a machine readable format. The issue form specifies, in the form of GitHub labels:
+* the location of the input handling logics (scripts)
+* the target repo where this logic resides, and where the resulting PR will be created
+* the type of task (tekton `Task`) to execute (e.g. if using bash scripts as your input logic, you would use the
+  Tekton `task-type:bash`)
 
-    mustache /tmp/data.yaml manifests/base/controller/kustomization.yaml > manifests/base/controller/kustomization.yaml
-    mustache /tmp/data.yaml manifests/base/tasks/kustomization.yaml > manifests/base/tasks/kustomization.yaml
-    mustache /tmp/data.yaml manifests/base/kustomization.yaml > manifests/base/kustomization.yaml
-    mustache /tmp/data.yaml manifests/overlays/stage/kustomization.yaml > manifests/overlays/stage/kustomization.yaml
-    mustache /tmp/data.yaml manifests/overlays/prod/kustomization.yaml > manifests/overlays/prod/kustomization.yaml
-    mustache /tmp/data.yaml src/app.ts > src/app.ts
-    mustache /tmp/data.yaml package.json > package.json
-    mustache /tmp/data.yaml package-lock.json > package-lock.json
-    mv README.md README.old.md
-    mustache /tmp/data.yaml README.template.md > README.md
-    ```
+### Quickstart via Openshift (OCP)
 
-3. Follow a guide at Probot on [how to create and configure a GitHubApp](https://probot.github.io/docs/development/#manually-configuring-a-github-app)
+> Note: this is for a quickstart prod deployment, for development follow the [contributing guide](CONTRIBUTING.md).
 
-4. Create credentials secrets for deployment based on your GitHub app data
+Pre-requisites:
+* Before starting, you will need an OCP cluster (you can use a Kubernetes cluster, but you'll need to replace the
+`routes` with `ingresses`, or expose the `Robozome` some other way).
+* Openshift Cluster with project admin in at least one namespace
+* Openshift Cluster with Openshift Pipelines or Tekton installed
+* Github user account, or organization with owner access
 
-    ```sh
-    # Copy secret from base
-    cp manifests/base/controller/secret.yaml manifests/overlays/stage/secret.enc.yaml
-    cp manifests/base/controller/secret.yaml manifests/overlays/prod/secret.enc.yaml
+Create the app on your GH user or organization following [these instructions][3].
 
-    # edit manifests/overlays/*/secret.enc.yaml filling in all data
+Leave the `webhook url` field empty for now. Give it a name, description, homepage url, as you see fit.
 
-    # Encrypt them via sops
-    sops -e -i --pgp="0508677DD04952D06A943D5B4DC4116D360E3276" manifests/overlays/stage/secret.enc.yaml
-    sops -e -i --pgp="0508677DD04952D06A943D5B4DC4116D360E3276" manifests/overlays/prod/secret.enc.yaml
-    ```
+When creating the app, be sure to create a WebHook secret, the instructions will say it's optional, but for our purposes
+it's required. Save this secret. We'll refer to this value as `$WEBHOOK_SECRET`.
 
-5. Hack on `src/app.ts`.
+Create the app.
 
-## Resources
+You will also be given a private key, save this as well (you can also [re-generate a new one][4] if you lose it).
+We'll refer to this value as `$PRIVATE_KEY`.
 
-- [Probot documentation](https://probot.github.io/docs/)
-- [Open Services Group extensions](https://github.com/open-services-group/probot-extensions)
-- Example: [Peribolos as a service](https://github.com/open-services-group/peribolos-as-a-service)
+Also note down the GitHub app's id. We'll refer to this value as `$APP_ID`.
+> Note you can find the app id by navigating to [app config][5].
 
-## Contributions
+Now install it into your GitHub org, when installing your app ensure your app has access to at least 2 repos:
+* one repo where your issue forms will be created
+* another repo where you will house your issue form input logic, and where the pr will be created (must be same repo)
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute.
+Run the following in your terminal:
 
----
+```bash
+$ cd $(mktemp -d)
+$ git clone https://github.com/operate-first/robozome.git
+$ cd robozome/manifests/robozome
 
-## Credit
+$ cat << EOF > secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: robozome
+  annotations:
+    kustomize.config.k8s.io/behavior: replace
+stringData:
+  app_id: $APP_ID
+  private_key: $PRIVATE_KEY
+  webhook_secret: "$WEBHOOK_SECRET
+EOF
+```
+Fill out `$APP_ID`, `$PRIVATE_KEY`, `$WEBHOOK_SECRET` in the above secret with the values we obtained earlier.
 
-See [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md).
+Now deploy the robozome app in your OCP namespace:
+```bash
+
+$ oc apply -f secret.yaml
+$ kustomzie build . | oc apply -n $YOUR_NAMESPACE -f -
+```
+
+Get the route:
+```bash
+WEBHOOK_URL="http://$(oc get routes -n robozome robozome --template={{.spec.host}})"
+```
+
+Navigate back to your GitHub app [config settings][5], and replace the webhook URL with `$WEBHOOK_URL`.
+
+### Adding New Issue forms and input logic
+
+* Assume the repo we're putting our issue forms in is called `$FORMS_REPO`
+* Assume the repo we're putting our pr creation input logic is called `$SCRIPTS_REPO`
+
+In the repo `$FORMS_REPO`, create an [issue form][1], the issue form must have these 3 GitHub labels:
+* `task-type:$TASK-TYPE`, the value of `$TASK-TYPE` dictates the Tekton task that will be run (currently only `bash` is possible)
+* `repo:$SCRIPTS_REPO`, value of `$SCRIPTS_REPO` decided earlier
+* `script:$SCRIPTS_PATH`, the location of the script that will process the issue form within `$SCRIPTS_REPO` (relative to root of repo)
+
+Be sure to also create these lables within the `$FORMS_REPO` repository.
+
+Now, in the repo `$SCRIPTS_REPO` add the script that will be executed in the location: `$SCRIPTS_PATH`.
+
+In the automation script, you have the following environment variables available:
+
+* PAYLOAD_PATH - location of the issue form inputs, [see here][2] for the format
+
+> If you are unsure about the format of the payload, you can create the issue form, create an issue using the form, then
+> inspect the task "dump-payload" by running `oc logs -c step-dump-payload robozome-onboarding-*-issue-form-automation-*`
+> replacing the * in the pod name accordingly.
+
+* ORG_NAME - the organization this app is deployed in, and where issue/form creation/responses are being generated
+* SOURCE_REPO - The repo where the issue was created
+* ISSUE_NUMBER - The number of the issue where the issue form was created
+
+### Bash task-type
+If creating a bash script to put in `$SCRIPTS_REPO`, your issue should be wrapped in the following code:
+
+```bash
+set -o allexport -o pipefail -ex
+
+# YOUR CODE GOES HERE
+
+# ALWAYS END IN A COMMIT, DO NOT PUSH.
+cd ${REPO}
+git add YOUR-CHANGES
+git commit -m "COMMIT MESSAGE"
+
+set -o allexport
+```
+
+### Adding new Task Types
+Task types are located [here][6]. They are regular Tekton `Tasks`. To add a new task type, create a Task with the name
+`issue-form-automation-$YOUR-TYPE`, replace `$YOUR-TYPE` accordingly.
+
+Add the Task to the pipeline [here][7].
+
+### Contributing guide
+
+To contribute to Robozome app, please follow the [contributing.md](CONTRIBUTING.md) instructions.
+
+[1]: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms
+[2]: https://github.com/operate-first/probot-extensions/tree/main/packages/probot-issue-form
+[3]: https://docs.github.com/en/developers/apps/building-github-apps/creating-a-github-app
+[4]: https://docs.github.com/en/developers/apps/building-github-apps/authenticating-with-github-apps
+[5]: https://docs.github.com/en/developers/apps/managing-github-apps/modifying-a-github-app
+[6]: https://github.com/operate-first/robozome/tree/main/manifests/robozome/tasks
+[7]: https://github.com/operate-first/robozome/blob/main/manifests/robozome/pipelines/issue-form-pipeline.yaml
