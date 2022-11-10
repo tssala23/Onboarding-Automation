@@ -18,8 +18,9 @@ export const handleIssueForm = async (
     );
 
     if (!labels) {
-      const msg: string = comments.FORM_TASK_FAILED_NO_LABELS(issue);
-      context.log.error(msg);
+      context.log.debug(
+        'Issue has no labels, assume automation is not desired.'
+      );
       return;
     }
 
@@ -33,7 +34,20 @@ export const handleIssueForm = async (
       .filter((l) => l.includes('repo'))[0]
       ?.split(':')[1];
 
-    if (!scriptPath || !taskType || !targetRepo) {
+    const receivedLabels = [scriptPath, taskType, targetRepo];
+    const allExist = (arr: string[]) => arr.every((x) => x != undefined);
+    const anyExist = (arr: string[]) => arr.some((x) => x != undefined);
+
+    if (!anyExist(receivedLabels)) {
+      context.log.debug(
+        'Issue has none of the required labels, assume automation is not desired.'
+      );
+      return;
+    }
+
+    // Issue has at least one required label, assume automation desired, but
+    // all required info is not present, provide feedback accordingly
+    if (anyExist(receivedLabels) && !allExist(receivedLabels)) {
       const msg: string = comments.FORM_TASK_FAILED_NO_LABELS(issue);
       await context.octokit.issues.createComment(context.issue({ body: msg }));
 
