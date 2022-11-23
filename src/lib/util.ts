@@ -238,6 +238,7 @@ const updateTokenSecret = async (
       undefined,
       undefined,
       undefined,
+      undefined,
       opts
     );
     context.log.info('GH Token patched.');
