@@ -1,18 +1,18 @@
 import { Context, Probot } from 'probot';
 import { Router } from 'express';
 import { exposeMetrics } from '@operate-first/probot-metrics';
-import { deleteTokenSecret } from '@operate-first/probot-kubernetes';
+import {
+  deleteTokenSecret,
+  createTokenSecret,
+  updateTokenSecret,
+} from '@operate-first/probot-kubernetes';
 import {
   numberOfInstallTotal,
   numberOfUninstallTotal,
   numberOfActionsTotal,
 } from './lib/counters';
 
-import {
-  createTokenSecret,
-  verifySecret,
-  wrapOperationWithMetrics,
-} from './lib/util';
+import { wrapOperationWithMetrics } from './lib/util';
 import { handleIssueForm } from './eventHandlers/handleIssueForm';
 import { handleCommands, parseCommands } from './eventHandlers/handleCommand';
 
@@ -41,7 +41,12 @@ export default (
         })
         .inc();
     }
-    await verifySecret(context);
+    try {
+      await updateTokenSecret(context);
+    } catch (e) {
+      app.log.error('Failure updating token secret. Trying to create one.');
+      await createTokenSecret(context);
+    }
   });
 
   app.on(
